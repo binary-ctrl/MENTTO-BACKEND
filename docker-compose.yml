@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  mento-backend:
+    image: vikaskamwal/mento-backend:test
+    container_name: mento-backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      # Application settings
+      - DEBUG=${DEBUG:-false}
+      - APP_NAME=Mentto Backend API
+      
+      # Supabase configuration
+      - SUPABASE_URL=${SUPABASE_URL}
+      - SUPABASE_KEY=${SUPABASE_KEY}
+      - SUPABASE_SERVICE_ROLE_KEY=${SUPABASE_SERVICE_ROLE_KEY}
+      
+      # Firebase configuration
+      - FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID}
+      - FIREBASE_API_KEY=${FIREBASE_API_KEY}
+      
+      # JWT configuration
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_ALGORITHM=HS256
+      - JWT_ACCESS_TOKEN_EXPIRE_MINUTES=1440
+      
+      # Google OAuth configuration
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}
+      - GOOGLE_REDIRECT_URI=${GOOGLE_REDIRECT_URI}
+      
+      # Frontend URL
+      - FRONTEND_URL=${FRONTEND_URL}
+
+      # Razorpay configuration
+      - RAZOR_PAY_KEY_ID=${RAZOR_PAY_KEY_ID}
+      - RAZOR_PAY_KEY_SECERET=${RAZOR_PAY_KEY_SECERET}
+      - RAZORPAY_WEBHOOK_SECRET=${RAZORPAY_WEBHOOK_SECRET:-${RAZOR_PAY_WEBHOOK_SECRET}}
+
+      # WATI (WhatsApp) configuration
+      - WATI_BASE_URL=${WATI_BASE_URL}
+      - WATI_API_KEY=${WATI_API_KEY:-${WAITIO}}
+      - ENABLE_WATI_NOTIFICATIONS=${ENABLE_WATI_NOTIFICATIONS:-true}
+      
+    volumes:
+      # Mount logs directory for persistent logging
+      - ./logs:/app/logs
+    networks:
+      - mento-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+networks:
+  mento-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local
