@@ -45,6 +45,14 @@ services:
       - WATI_BASE_URL=${WATI_BASE_URL}
       - WATI_API_KEY=${WATI_API_KEY:-${WAITIO}}
       - ENABLE_WATI_NOTIFICATIONS=${ENABLE_WATI_NOTIFICATIONS:-true}
+
+      # Email (SMTP) configuration
+      - SMTP_SERVER=${SMTP_SERVER}
+      - SMTP_PORT=${SMTP_PORT:-587}
+      - SMTP_USERNAME=${SMTP_USERNAME}
+      - SMTP_PASSWORD=${SMTP_PASSWORD}
+      - SMTP_USE_TLS=${SMTP_USE_TLS:-true}
+      - FROM_EMAIL=${FROM_EMAIL}
       
     volumes:
       # Mount logs directory for persistent logging
