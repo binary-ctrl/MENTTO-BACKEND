@@ -203,7 +203,7 @@ class EmailService:
                     .otp-code {{ 
                         font-size: 24px; 
                         font-weight: bold; 
-                        color: #2563eb; 
+                        color: #32898b; 
                         text-align: center; 
                         margin: 20px 0; 
                         padding: 15px; 
@@ -222,14 +222,14 @@ class EmailService:
                         padding-top: 20px;
                     }}
                     .brand {{ 
-                        color: #2563eb; 
+                        color: #32898b; 
                         font-weight: bold; 
                     }}
                     .social {{ 
                         margin-top: 10px; 
                     }}
                     .social a {{ 
-                        color: #2563eb; 
+                        color: #32898b; 
                         text-decoration: none; 
                     }}
                 </style>
@@ -336,12 +336,12 @@ class EmailService:
                     .welcome-title {{ 
                         font-size: 28px; 
                         margin: 0 0 20px 0; 
-                        color: #2563eb;
+                        color: #32898b;
                         text-align: center;
                     }}
                     .cta-button {{ 
                         display: inline-block; 
-                        background-color: #2563eb; 
+                        background-color: #32898b; 
                         color: white; 
                         padding: 15px 30px; 
                         text-decoration: none; 
@@ -364,7 +364,7 @@ class EmailService:
                         content: "✅"; 
                         position: absolute; 
                         left: 0; 
-                        color: #2563eb; 
+                        color: #32898b; 
                         font-weight: bold;
                     }}
                     .pro-tip {{ 
@@ -383,7 +383,7 @@ class EmailService:
                         padding-top: 20px;
                     }}
                     .brand {{ 
-                        color: #2563eb; 
+                        color: #32898b; 
                         font-weight: bold; 
                     }}
                     .contact {{ 
@@ -422,7 +422,7 @@ class EmailService:
                         
                         <div class="contact">
                             <p>If you need anything, just reach out:<br>
-                            📧 <a href="mailto:contact@mentto.in" style="color: #2563eb;">contact@mentto.in</a></p>
+                            📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a></p>
                         </div>
                         
                         <p>We're thrilled to have you on board. Let's make your study journey clearer, smarter, and a lot less overwhelming together.</p>
@@ -529,7 +529,7 @@ class EmailService:
                     .welcome-title {{ 
                         font-size: 28px; 
                         margin: 0 0 20px 0; 
-                        color: #059669;
+                        color: #32898b;
                         text-align: center;
                     }}
                     .review-notice {{ 
@@ -549,7 +549,7 @@ class EmailService:
                         padding-top: 20px;
                     }}
                     .brand {{ 
-                        color: #059669; 
+                        color: #32898b; 
                         font-weight: bold; 
                     }}
                     .contact {{ 
@@ -581,8 +581,8 @@ class EmailService:
                         <p>Warmly,<br>Team Mentto</p>
                         
                         <div class="contact">
-                            <p>📧 <a href="mailto:contact@mentto.in" style="color: #059669;">contact@mentto.in</a><br>
-                            🌐 <a href="https://www.mentto.in" style="color: #059669;">www.mentto.in</a></p>
+                            <p>📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a><br>
+                            🌐 <a href="https://www.mentto.in" style="color: #32898b;">www.mentto.in</a></p>
                         </div>
                     </div>
                 </div>
@@ -636,9 +636,8 @@ class EmailService:
         try:
             # Extract first name from user_name if available
             first_name = user_name.split()[0] if user_name and user_name.strip() else "there"
-            ward_display = f" for {ward_name}" if ward_name else ""
             
-            subject = "Welcome to MenttoConnect – Supporting Your Child's Study Abroad Journey!"
+            subject = "Welcome to MenttoConnect!"
             
             # HTML content
             html_content = f"""
@@ -646,7 +645,7 @@ class EmailService:
             <html>
             <head>
                 <meta charset="utf-8">
-                <title>Welcome to MenttoConnect - Parent</title>
+                <title>Welcome to MenttoConnect</title>
                 <style>
                     body {{ 
                         font-family: Arial, sans-serif; 
@@ -664,41 +663,20 @@ class EmailService:
                         overflow: hidden;
                         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
                     }}
-                    .header {{ 
-                        background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%); 
-                        color: white; 
-                        padding: 30px; 
-                        text-align: center;
-                    }}
                     .content {{ 
                         padding: 40px 30px; 
                     }}
                     .welcome-title {{ 
                         font-size: 28px; 
-                        margin: 0 0 10px 0; 
-                        color: white;
-                    }}
-                    .welcome-subtitle {{ 
-                        font-size: 16px; 
-                        margin: 0; 
-                        opacity: 0.9;
-                    }}
-                    .cta-button {{ 
-                        display: inline-block; 
-                        background-color: #7c3aed; 
-                        color: white; 
-                        padding: 15px 30px; 
-                        text-decoration: none; 
-                        border-radius: 6px; 
-                        font-weight: bold; 
-                        margin: 20px 0; 
+                        margin: 0 0 20px 0; 
+                        color: #32898b;
+                        text-align: center;
                     }}
                     .steps {{ 
-                        background-color: #faf5ff; 
+                        background-color: #f8fafc; 
                         padding: 20px; 
                         border-radius: 6px; 
                         margin: 20px 0; 
-                        border-left: 4px solid #7c3aed;
                     }}
                     .step {{ 
                         margin: 15px 0; 
@@ -706,17 +684,18 @@ class EmailService:
                         position: relative;
                     }}
                     .step::before {{ 
-                        content: "✓"; 
+                        content: "✅"; 
                         position: absolute; 
                         left: 0; 
-                        color: #7c3aed; 
+                        color: #32898b; 
                         font-weight: bold;
                     }}
-                    .support {{ 
-                        background-color: #f8fafc; 
-                        padding: 20px; 
+                    .pro-tip {{ 
+                        background-color: #fef3c7; 
+                        padding: 15px; 
                         border-radius: 6px; 
                         margin: 20px 0; 
+                        border-left: 4px solid #f59e0b;
                     }}
                     .footer {{ 
                         text-align: center; 
@@ -727,73 +706,54 @@ class EmailService:
                         padding-top: 20px;
                     }}
                     .brand {{ 
-                        color: #7c3aed; 
+                        color: #32898b; 
                         font-weight: bold; 
                     }}
-                    .social {{ 
-                        margin-top: 10px; 
-                    }}
-                    .social a {{ 
-                        color: #7c3aed; 
-                        text-decoration: none; 
-                        margin: 0 10px;
+                    .contact {{ 
+                        background-color: #f0f9ff; 
+                        padding: 15px; 
+                        border-radius: 6px; 
+                        margin: 20px 0; 
+                        text-align: center;
                     }}
                 </style>
             </head>
             <body>
                 <div class="container">
-                    <div class="header">
-                        <h1 class="welcome-title">Welcome, Parent!</h1>
-                        <p class="welcome-subtitle">Supporting your child's study abroad dreams</p>
-                    </div>
                     <div class="content">
-                        <h2>Hi {first_name},</h2>
-                        <p>Welcome to <span class="brand">MenttoConnect</span>! We understand that supporting your child's study abroad journey{ward_display} is both exciting and challenging. We're here to help make this process smoother and more informed for your family.</p>
+                        <h1 class="welcome-title">Welcome to MenttoConnect!</h1>
+                        
+                        <p>Hi {first_name},</p>
+                        
+                        <p>Welcome to <span class="brand">MenttoConnect</span>! We're so excited to have you on board.</p>
+                        
+                        <p>You've just unlocked access to verified Alumni Mentors who've been there, done that – they've faced the same questions and challenges your child might be navigating right now, and they're here to share real, honest advice with you.</p>
+                        
+                        <p>Whether you're exploring the right courses, universities, visa options, or career paths for your ward, our mentors are here to make the process simpler and more transparent – so you can guide your child with confidence.</p>
                         
                         <div class="steps">
-                            <h3>🏠 How MenttoConnect Helps Parents</h3>
-                            <div class="step">Complete your parent profile to share your child's study abroad goals</div>
-                            <div class="step">Connect with experienced mentors who understand your concerns</div>
-                            <div class="step">Get guidance on financial planning and scholarship opportunities</div>
-                            <div class="step">Stay informed about application deadlines and requirements</div>
-                            <div class="step">Access resources to support your child's preparation</div>
+                            <h3>Here's how to get started:</h3>
+                            <div class="step">Browse through verified mentor profiles</div>
+                            <div class="step">Book a 1:1 session with a mentor who aligns with your goals</div>
+                            <div class="step">Keep all conversations safely within MenttoConnect</div>
+                            <div class="step">Leave a review after your session – it helps other parents and students like you!</div>
                         </div>
                         
-                        <div class="support">
-                            <h3>💝 What We Offer Parents</h3>
-                            <ul>
-                                <li>🎓 Expert guidance on university and course selection</li>
-                                <li>💰 Financial planning and scholarship information</li>
-                                <li>📋 Application process support and timeline management</li>
-                                <li>🌍 Country-specific insights and safety information</li>
-                                <li>🤝 Direct communication with experienced mentors</li>
-                                <li>📚 Resources to help prepare your child for study abroad</li>
-                            </ul>
+                        <div class="pro-tip">
+                            <strong>💡 Pro Tip:</strong> The more specific your questions, the more value you'll get from each session.
                         </div>
                         
-                        <p>As a parent, you play a crucial role in your child's study abroad journey. Our platform provides you with:</p>
-                        <ul>
-                            <li>📊 Transparent information about costs and requirements</li>
-                            <li>🎯 Personalized mentor matching based on your child's goals</li>
-                            <li>📞 Direct access to mentors for your questions and concerns</li>
-                            <li>📅 Timeline guidance to keep applications on track</li>
-                            <li>🔒 Safe and secure platform for all communications</li>
-                        </ul>
+                        <div class="contact">
+                            <p>If you need anything, just reach out:<br>
+                            📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a></p>
+                        </div>
                         
-                        <p>We believe that informed parents make confident decisions. Let us help you support your child's dreams while ensuring you have all the information you need.</p>
+                        <p>We're thrilled to have you as part of the Mentto community – together, let's make your child's career journey clearer, smarter, and stress-free.</p>
                         
-                        <p>Ready to get started? Complete your parent profile and connect with mentors who can guide your family through this important journey.</p>
-                        
-                        <p>If you have any questions or concerns, our support team is always available to help.</p>
-                        
-                        <p>Best regards,<br>Team MenttoConnect</p>
+                        <p>Warmly,<br>Team Mentto</p>
                     </div>
                     <div class="footer">
-                        <div class="brand">mentto.in</div>
-                        <div class="social">
-                            <a href="https://instagram.com/mentto.official" target="_blank">Instagram</a>
-                            <a href="mailto:support@mentto.in" target="_blank">Email Support</a>
-                        </div>
+                        <div class="brand">🌐 www.mentto.in</div>
                     </div>
                 </div>
             </body>
@@ -802,42 +762,33 @@ class EmailService:
             
             # Plain text content
             text_content = f"""
-            Welcome to MenttoConnect, {first_name}!
+            Welcome to MenttoConnect!
             
-            Welcome to MenttoConnect! We understand that supporting your child's study abroad journey{ward_display} is both exciting and challenging. We're here to help make this process smoother and more informed for your family.
+            Hi {first_name},
             
-            How MenttoConnect Helps Parents:
-            ✓ Complete your parent profile to share your child's study abroad goals
-            ✓ Connect with experienced mentors who understand your concerns
-            ✓ Get guidance on financial planning and scholarship opportunities
-            ✓ Stay informed about application deadlines and requirements
-            ✓ Access resources to support your child's preparation
+            Welcome to MenttoConnect! We're so excited to have you on board.
             
-            What We Offer Parents:
-            🎓 Expert guidance on university and course selection
-            💰 Financial planning and scholarship information
-            📋 Application process support and timeline management
-            🌍 Country-specific insights and safety information
-            🤝 Direct communication with experienced mentors
-            📚 Resources to help prepare your child for study abroad
+            You've just unlocked access to verified Alumni Mentors who've been there, done that – they've faced the same questions and challenges your child might be navigating right now, and they're here to share real, honest advice with you.
             
-            As a parent, you play a crucial role in your child's study abroad journey. Our platform provides you with:
-            📊 Transparent information about costs and requirements
-            🎯 Personalized mentor matching based on your child's goals
-            📞 Direct access to mentors for your questions and concerns
-            📅 Timeline guidance to keep applications on track
-            🔒 Safe and secure platform for all communications
+            Whether you're exploring the right courses, universities, visa options, or career paths for your ward, our mentors are here to make the process simpler and more transparent – so you can guide your child with confidence.
             
-            We believe that informed parents make confident decisions. Let us help you support your child's dreams while ensuring you have all the information you need.
+            Here's how to get started:
+            ✅ Browse through verified mentor profiles
+            ✅ Book a 1:1 session with a mentor who aligns with your goals
+            ✅ Keep all conversations safely within MenttoConnect
+            ✅ Leave a review after your session – it helps other parents and students like you!
             
-            Ready to get started? Complete your parent profile and connect with mentors who can guide your family through this important journey.
+            💡 Pro Tip: The more specific your questions, the more value you'll get from each session.
             
-            If you have any questions or concerns, our support team is always available to help.
+            If you need anything, just reach out:
+            📧 contact@mentto.in
             
-            Best regards,
-            Team MenttoConnect
+            We're thrilled to have you as part of the Mentto community – together, let's make your child's career journey clearer, smarter, and stress-free.
             
-            mentto.in | @mentto.official | support@mentto.in
+            Warmly,
+            Team Mentto
+            
+            🌐 www.mentto.in
             """
             
             # Send email
@@ -861,6 +812,352 @@ class EmailService:
             return {
                 'success': False,
                 'message': f'Error sending parent onboarding email: {str(e)}'
+            }
+
+    def send_mentor_verification_email(self, to_email: str, user_name: str = None) -> dict:
+        """Send email notification to mentor that their profile is under verification"""
+        try:
+            # Extract first name from user_name if available
+            first_name = user_name.split()[0] if user_name and user_name.strip() else "Mentor"
+            
+            subject = "Your Profile is Under Verification - MenttoConnect"
+            
+            # HTML content
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Profile Under Verification - MenttoConnect</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif; 
+                        line-height: 1.6; 
+                        color: #333; 
+                        margin: 0; 
+                        padding: 0; 
+                        background-color: #f4f4f4;
+                    }}
+                    .container {{ 
+                        max-width: 600px; 
+                        margin: 20px auto; 
+                        background-color: white; 
+                        border-radius: 8px; 
+                        overflow: hidden;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }}
+                    .content {{ 
+                        padding: 40px 30px; 
+                    }}
+                    .verification-title {{ 
+                        font-size: 28px; 
+                        margin: 0 0 20px 0; 
+                        color: #32898b;
+                        text-align: center;
+                    }}
+                    .verification-notice {{ 
+                        background-color: #fef3c7; 
+                        padding: 20px; 
+                        border-radius: 6px; 
+                        margin: 20px 0; 
+                        border-left: 4px solid #f59e0b;
+                        text-align: center;
+                    }}
+                    .steps {{ 
+                        background-color: #f8fafc; 
+                        padding: 20px; 
+                        border-radius: 6px; 
+                        margin: 20px 0; 
+                    }}
+                    .step {{ 
+                        margin: 15px 0; 
+                        padding-left: 25px; 
+                        position: relative;
+                    }}
+                    .step::before {{ 
+                        content: "⏳"; 
+                        position: absolute; 
+                        left: 0; 
+                        color: #32898b; 
+                        font-weight: bold;
+                    }}
+                    .footer {{ 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        color: #666; 
+                        font-size: 14px; 
+                        border-top: 1px solid #e2e8f0;
+                        padding-top: 20px;
+                    }}
+                    .brand {{ 
+                        color: #32898b; 
+                        font-weight: bold; 
+                    }}
+                    .contact {{ 
+                        background-color: #f0fdf4; 
+                        padding: 15px; 
+                        border-radius: 6px; 
+                        margin: 20px 0; 
+                        text-align: center;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="content">
+                        <h1 class="verification-title">Profile Under Verification</h1>
+                        
+                        <p>Hi {first_name},</p>
+                        
+                        <p>Thank you for completing your mentor profile on <span class="brand">MenttoConnect</span>! We've received all your information and your profile is now under verification.</p>
+                        
+                        <div class="verification-notice">
+                            <p><strong>📋 Your profile is currently under review.</strong> Our team will carefully review your application and verify your credentials. This process usually takes 3–4 business days.</p>
+                        </div>
+                        
+                        <div class="steps">
+                            <h3>What happens next?</h3>
+                            <div class="step">Our team reviews your educational background and experience</div>
+                            <div class="step">We verify your university credentials and work experience</div>
+                            <div class="step">You'll receive an email notification once verification is complete</div>
+                            <div class="step">Once verified, students can start booking sessions with you</div>
+                        </div>
+                        
+                        <div class="contact">
+                            <p>If you have any questions during this process, feel free to reach out to us. We're here to help!</p>
+                        </div>
+                        
+                        <p>We appreciate your patience and look forward to having you as part of our mentor community.</p>
+                        
+                        <p>Best regards,<br>Team Mentto</p>
+                        
+                        <div class="contact">
+                            <p>📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a><br>
+                            🌐 <a href="https://www.mentto.in" style="color: #32898b;">www.mentto.in</a></p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Plain text content
+            text_content = f"""
+            Profile Under Verification - MenttoConnect
+            
+            Hi {first_name},
+            
+            Thank you for completing your mentor profile on MenttoConnect! We've received all your information and your profile is now under verification.
+            
+            Your profile is currently under review. Our team will carefully review your application and verify your credentials. This process usually takes 3–4 business days.
+            
+            What happens next?
+            ⏳ Our team reviews your educational background and experience
+            ⏳ We verify your university credentials and work experience
+            ⏳ You'll receive an email notification once verification is complete
+            ⏳ Once verified, students can start booking sessions with you
+            
+            If you have any questions during this process, feel free to reach out to us. We're here to help!
+            
+            We appreciate your patience and look forward to having you as part of our mentor community.
+            
+            Best regards,
+            Team Mentto
+            
+            📧 contact@mentto.in
+            🌐 www.mentto.in
+            """
+            
+            # Send email
+            success = self.send_email(to_email, subject, html_content, text_content)
+            
+            if success:
+                logger.info(f"Mentor verification email sent successfully to {to_email}")
+                return {
+                    'success': True,
+                    'message': 'Mentor verification email sent successfully',
+                    'email': to_email
+                }
+            else:
+                return {
+                    'success': False,
+                    'message': 'Failed to send mentor verification email'
+                }
+                
+        except Exception as e:
+            logger.error(f"Error sending mentor verification email: {str(e)}")
+            return {
+                'success': False,
+                'message': f'Error sending mentor verification email: {str(e)}'
+            }
+
+    def send_mentor_verified_email(self, to_email: str, user_name: str = None) -> dict:
+        """Send email notification to mentor that their profile has been verified"""
+        try:
+            # Extract first name from user_name if available
+            first_name = user_name.split()[0] if user_name and user_name.strip() else "Mentor"
+            
+            subject = "Congratulations! You're Now Live on MenttoConnect! 🚀"
+            
+            # HTML content
+            html_content = f"""
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="utf-8">
+                <title>Profile Verified - MenttoConnect</title>
+                <style>
+                    body {{ 
+                        font-family: Arial, sans-serif; 
+                        line-height: 1.6; 
+                        color: #333; 
+                        margin: 0; 
+                        padding: 0; 
+                        background-color: #f4f4f4;
+                    }}
+                    .container {{ 
+                        max-width: 600px; 
+                        margin: 20px auto; 
+                        background-color: white; 
+                        border-radius: 8px; 
+                        overflow: hidden;
+                        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                    }}
+                    .content {{ 
+                        padding: 40px 30px; 
+                    }}
+                    .congratulations-title {{ 
+                        font-size: 28px; 
+                        margin: 0 0 20px 0; 
+                        color: #32898b;
+                        text-align: center;
+                    }}
+                    .success-notice {{ 
+                        background-color: #d1fae5; 
+                        padding: 20px; 
+                        border-radius: 6px; 
+                        margin: 20px 0; 
+                        border-left: 4px solid #10b981;
+                        text-align: center;
+                    }}
+                    .tips {{ 
+                        background-color: #f8fafc; 
+                        padding: 20px; 
+                        border-radius: 6px; 
+                        margin: 20px 0; 
+                        border: 1px solid #e2e8f0;
+                    }}
+                    .tip-item {{ 
+                        margin: 10px 0; 
+                        padding: 8px 0;
+                    }}
+                    .footer {{ 
+                        text-align: center; 
+                        margin-top: 30px; 
+                        color: #666; 
+                        font-size: 14px; 
+                        border-top: 1px solid #e2e8f0;
+                        padding-top: 20px;
+                    }}
+                    .brand {{ 
+                        color: #32898b; 
+                        font-weight: bold; 
+                    }}
+                    .emoji {{ 
+                        font-size: 1.2em; 
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="content">
+                        <h2 class="congratulations-title">Congratulations! You're Now Live on MenttoConnect! 🚀</h2>
+                        
+                        <p>Hi {first_name},</p>
+                        
+                        <div class="success-notice">
+                            <strong>🎉 Your profile has been approved and is now live on MenttoConnect!</strong>
+                        </div>
+                        
+                        <p>Thank you for offering your time and experience to guide students on their study abroad journey. We're so excited to have you on board.</p>
+                        
+                        <p>Here's everything you need to know to get started:</p>
+                        
+                        <div class="tips">
+                            <div class="tip-item"><span class="emoji">🔗</span> Keep your calendar link updated so mentees can easily book sessions with you.</div>
+                            <div class="tip-item"><span class="emoji">📣</span> Feel free to share your MenttoConnect profile on LinkedIn or with anyone who reaches out directly. The more visibility, the better!</div>
+                            <div class="tip-item"><span class="emoji">🗨️</span> Kindly keep all conversations within the MenttoConnect platform for a smoother and safer experience.</div>
+                            <div class="tip-item"><span class="emoji">⭐</span> Encourage mentees to leave a review after their session. It helps build your credibility and trust with future students.</div>
+                        </div>
+                        
+                        <p>Need help? Have questions? We're just a message away.<br>
+                        📧 <a href="mailto:contact@mentto.in">contact@mentto.in</a></p>
+                        
+                        <p>At Mentto, our mission is to ensure you're rewarded for your time and knowledge, while students receive real, honest, and practical guidance from someone who's truly been there, done that.</p>
+                        
+                        <p>Thanks again for being part of the Mentto. Your mentorship truly makes a difference. 💛</p>
+                        
+                        <p>Warm regards,<br>Team Mentto</p>
+                        
+                        <div class="footer">
+                            <p>🌐 <a href="https://www.mentto.in" class="brand">www.mentto.in</a></p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            
+            # Plain text content
+            text_content = f"""
+            Congratulations! You're Now Live on MenttoConnect! 🚀
+            
+            Hi {first_name},
+            
+            Congratulations! Your profile has been approved and is now live on MenttoConnect! 
+            
+            Thank you for offering your time and experience to guide students on their study abroad journey. We're so excited to have you on board.
+            
+            Here's everything you need to know to get started:
+            
+            🔗 Keep your calendar link updated so mentees can easily book sessions with you.
+            📣 Feel free to share your MenttoConnect profile on LinkedIn or with anyone who reaches out directly. The more visibility, the better!
+            🗨️ Kindly keep all conversations within the MenttoConnect platform for a smoother and safer experience.
+            ⭐ Encourage mentees to leave a review after their session. It helps build your credibility and trust with future students.
+            
+            Need help? Have questions? We're just a message away.
+            📧 contact@mentto.in
+            
+            At Mentto, our mission is to ensure you're rewarded for your time and knowledge, while students receive real, honest, and practical guidance from someone who's truly been there, done that.
+            
+            Thanks again for being part of the Mentto. Your mentorship truly makes a difference. 💛
+            
+            Warm regards,
+            Team Mentto
+            🌐 www.mentto.in
+            """
+            
+            # Send email
+            success = self.send_email(to_email, subject, html_content, text_content)
+            
+            if success:
+                logger.info(f"Mentor verified email sent successfully to {to_email}")
+                return {
+                    'success': True,
+                    'message': 'Mentor verified email sent successfully',
+                    'email': to_email
+                }
+            else:
+                return {
+                    'success': False,
+                    'message': 'Failed to send mentor verified email'
+                }
+                
+        except Exception as e:
+            logger.error(f"Error sending mentor verified email: {str(e)}")
+            return {
+                'success': False,
+                'message': f'Error sending mentor verified email: {str(e)}'
             }
 
     def send_onboarding_email(self, to_email: str, user_role: str, user_name: str = None, ward_name: str = None) -> dict:

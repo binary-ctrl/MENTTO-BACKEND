@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from typing import List
 import logging
 
@@ -429,4 +429,39 @@ async def get_all_mentorship_interests(current_user: dict = Depends(get_current_
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get mentorship interests"
+        )
+
+@router.get("/mentees", response_model=List[MentorshipInterestResponse])
+async def get_mentor_mentees(
+    filter_type: str = Query("all", description="Filter type: 'new' for recent mentees (last 30 days) or 'all' for all mentees"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Get mentor's mentees with filtering (new or all)"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Validate filter_type
+        if filter_type not in ["new", "all"]:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid filter_type. Must be 'new' or 'all'"
+            )
+
+        mentees = await mentorship_interest_service.get_mentor_mentees(user_id, filter_type)
+        return mentees
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting mentor mentees: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get mentor mentees"
         )

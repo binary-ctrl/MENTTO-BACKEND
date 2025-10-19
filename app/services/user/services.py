@@ -132,7 +132,32 @@ class UserService:
 class MenteeService:
     def __init__(self):
         self.supabase = get_supabase()
-        self.supabase_admin = get_supabase_admin()
+
+    def _parse_datetime(self, datetime_str: str) -> datetime:
+        """Parse datetime string from Supabase with robust error handling"""
+        try:
+            # Handle different datetime formats from Supabase
+            if datetime_str.endswith('Z'):
+                datetime_str = datetime_str.replace('Z', '+00:00')
+            
+            # Try to parse with microseconds handling
+            if '.' in datetime_str and '+' in datetime_str:
+                # Split on the timezone part
+                dt_part, tz_part = datetime_str.rsplit('+', 1)
+                if '.' in dt_part:
+                    # Handle microseconds - normalize to 6 digits
+                    base_dt, microsec = dt_part.split('.')
+                    if len(microsec) > 6:
+                        microsec = microsec[:6]
+                    elif len(microsec) < 6:
+                        # Pad with zeros to make it 6 digits
+                        microsec = microsec.ljust(6, '0')
+                    datetime_str = f"{base_dt}.{microsec}+{tz_part}"
+            
+            return datetime.fromisoformat(datetime_str)
+        except Exception as e:
+            logger.warning(f"Failed to parse datetime '{datetime_str}': {e}, using current time")
+            return datetime.utcnow()
 
     async def create_mentee_details(self, mentee_data: MenteeDetailsCreate) -> MenteeDetailsResponse:
         """Create mentee details"""
@@ -236,8 +261,8 @@ class MenteeService:
             how_mentto_help=data.get("how_mentto_help", []),
             how_found_mentto=data.get("how_found_mentto"),
             community_referral=data.get("community_referral"),
-            created_at=datetime.fromisoformat(data["created_at"].replace('Z', '+00:00')),
-            updated_at=datetime.fromisoformat(data["updated_at"].replace('Z', '+00:00'))
+            created_at=self._parse_datetime(data["created_at"]),
+            updated_at=self._parse_datetime(data["updated_at"])
         )
 
 
@@ -245,6 +270,32 @@ class MentorService:
     def __init__(self):
         self.supabase = get_supabase()
         self.supabase_admin = get_supabase_admin()
+
+    def _parse_datetime(self, datetime_str: str) -> datetime:
+        """Parse datetime string from Supabase with robust error handling"""
+        try:
+            # Handle different datetime formats from Supabase
+            if datetime_str.endswith('Z'):
+                datetime_str = datetime_str.replace('Z', '+00:00')
+            
+            # Try to parse with microseconds handling
+            if '.' in datetime_str and '+' in datetime_str:
+                # Split on the timezone part
+                dt_part, tz_part = datetime_str.rsplit('+', 1)
+                if '.' in dt_part:
+                    # Handle microseconds - normalize to 6 digits
+                    base_dt, microsec = dt_part.split('.')
+                    if len(microsec) > 6:
+                        microsec = microsec[:6]
+                    elif len(microsec) < 6:
+                        # Pad with zeros to make it 6 digits
+                        microsec = microsec.ljust(6, '0')
+                    datetime_str = f"{base_dt}.{microsec}+{tz_part}"
+            
+            return datetime.fromisoformat(datetime_str)
+        except Exception as e:
+            logger.warning(f"Failed to parse datetime '{datetime_str}': {e}, using current time")
+            return datetime.utcnow()
 
     async def create_mentor_details(self, mentor_data: MentorDetailsCreate) -> MentorDetailsResponse:
         """Create mentor details"""
@@ -274,15 +325,34 @@ class MentorService:
             mentor_dict = mentor_data.dict()
             mentor_dict.pop("user_id", None)
             
-            # Add user_id and currency to the data
+            # Add user_id, currency, and verification status to the data
             mentor_dict["user_id"] = mentor_data.user_id
             # Use currency from mentor_data if provided, otherwise default to INR
             mentor_dict["currency"] = mentor_data.currency or "INR"
+            # Set verification status to pending for new mentor profiles
+            mentor_dict["verification_status"] = "pending"
 
             result = self.supabase.table("mentor_details").insert(mentor_dict).execute()
 
             if result.data:
                 details_data = result.data[0]
+                
+                # Send verification email to mentor
+                try:
+                    from app.services.email.email_service import email_service
+                    user_name = f"{mentor_data.first_name} {mentor_data.last_name}"
+                    email_result = email_service.send_mentor_verification_email(
+                        to_email=mentor_data.email,
+                        user_name=user_name
+                    )
+                    if email_result.get('success'):
+                        logger.info(f"Verification email sent to mentor {mentor_data.email}")
+                    else:
+                        logger.warning(f"Failed to send verification email to mentor {mentor_data.email}: {email_result.get('message')}")
+                except Exception as email_error:
+                    logger.error(f"Error sending verification email to mentor {mentor_data.email}: {email_error}")
+                    # Don't fail the mentor creation if email fails
+                
                 return self._convert_to_mentor_response(details_data)
             else:
                 raise Exception("Failed to create mentor details")
@@ -556,8 +626,9 @@ class MentorService:
             brief_introduction=data["brief_introduction"],
             mentorship_hours_per_week=data.get("mentorship_hours_per_week"),
             community_referral=data.get("community_referral"),
-            created_at=datetime.fromisoformat(data["created_at"].replace('Z', '+00:00')),
-            updated_at=datetime.fromisoformat(data["updated_at"].replace('Z', '+00:00'))
+            verification_status=data.get("verification_status", "pending"),  # Default to pending if not set
+            created_at=self._parse_datetime(data["created_at"]),
+            updated_at=self._parse_datetime(data["updated_at"])
         )
 
 
@@ -737,6 +808,73 @@ class MentorshipInterestService:
 
         except Exception as e:
             logger.error(f"Error getting mentor interests by status: {e}")
+            import traceback
+            logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
+
+    async def get_mentor_mentees(self, mentor_id: str, filter_type: str = "all") -> List[MentorshipInterestResponse]:
+        """Get mentor's mentees with filtering (new or all)"""
+        try:
+            logger.info(f"Getting {filter_type} mentees for mentor: {mentor_id}")
+            
+            # For "new" filter, get only accepted interests from the last 30 days
+            # For "all" filter, get all accepted interests
+            if filter_type == "new":
+                from datetime import datetime, timedelta
+                thirty_days_ago = (datetime.now() - timedelta(days=30)).isoformat()
+                result = self.supabase.table("mentorship_interest").select("*").eq("mentor_id", mentor_id).eq("status", "accepted").gte("created_at", thirty_days_ago).order("created_at", desc=True).execute()
+            else:
+                result = self.supabase.table("mentorship_interest").select("*").eq("mentor_id", mentor_id).eq("status", "accepted").order("created_at", desc=True).execute()
+            
+            logger.info(f"Found {len(result.data)} {filter_type} mentees for mentor {mentor_id}")
+            
+            mentees = []
+            for data in result.data:
+                # Get mentee and mentor details separately
+                mentee_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentee_id"]).execute()
+                mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
+                
+                # Get mentee details from mentee_details table
+                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
+                
+                # Add user details to interest data
+                if mentee_result.data:
+                    mentee_data = {
+                        "full_name": mentee_result.data[0]["full_name"],
+                        "email": mentee_result.data[0]["email"]
+                    }
+                    
+                    # Add mentee details if available
+                    if mentee_details_result.data:
+                        mentee_details = mentee_details_result.data[0]
+                        mentee_data.update({
+                            "first_name": mentee_details.get("first_name"),
+                            "last_name": mentee_details.get("last_name"),
+                            "phone_number": mentee_details.get("phone_number"),
+                            "countries_considering": mentee_details.get("countries_considering"),
+                            "education_level": mentee_details.get("education_level"),
+                            "why_study_abroad": mentee_details.get("why_study_abroad"),
+                            "intake_applying_for": mentee_details.get("intake_applying_for"),
+                            "year_planning_abroad": mentee_details.get("year_planning_abroad"),
+                            "target_industry": mentee_details.get("target_industry"),
+                            "self_description": mentee_details.get("self_description")
+                        })
+                    
+                    data["mentee"] = mentee_data
+                
+                if mentor_result.data:
+                    data["mentor"] = {
+                        "full_name": mentor_result.data[0]["full_name"],
+                        "email": mentor_result.data[0]["email"]
+                    }
+                
+                mentees.append(await self._convert_to_interest_response(data))
+            
+            logger.info(f"Successfully converted {len(mentees)} {filter_type} mentees")
+            return mentees
+
+        except Exception as e:
+            logger.error(f"Error getting {filter_type} mentees for mentor: {e}")
             import traceback
             logger.error(f"Traceback: {traceback.format_exc()}")
             raise

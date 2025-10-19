@@ -64,20 +64,8 @@ async def signup(request: FirebaseTokenRequest):
         
         new_user = await user_service.create_user(user_data)
         
-        # Send onboarding email in background (fire-and-forget)
-        try:
-            from app.services.email.email_service import email_service
-            import asyncio
-            asyncio.create_task(
-                email_service.send_onboarding_email(
-                    to_email=new_user.email,
-                    user_role=new_user.role,
-                    user_name=new_user.full_name
-                )
-            )
-        except Exception as e:
-            # Log error but don't fail the registration
-            logger.warning(f"Failed to send onboarding email to {new_user.email}: {e}")
+        # NOTE: Onboarding email will be sent after questionnaire completion
+        # not during signup, to ensure user has completed the onboarding form
         
         # Create JWT token
         token = create_user_token(
@@ -246,20 +234,8 @@ async def email_password_signup(payload: EmailPasswordSignupRequest):
         )
         app_user = await user_service.create_user(user_data)
         
-        # Send onboarding email in background (fire-and-forget)
-        try:
-            from app.services.email.email_service import email_service
-            import asyncio
-            asyncio.create_task(
-                email_service.send_onboarding_email(
-                    to_email=app_user.email,
-                    user_role=app_user.role,
-                    user_name=app_user.full_name
-                )
-            )
-        except Exception as e:
-            # Log error but don't fail the registration
-            logger.warning(f"Failed to send onboarding email to {app_user.email}: {e}")
+        # NOTE: Onboarding email will be sent after questionnaire completion
+        # not during signup, to ensure user has completed the onboarding form
             
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Supabase insert failed: {e}")
@@ -461,20 +437,8 @@ async def google_callback(code: str, state: Optional[str] = None, error: Optiona
             app_user = await user_service.create_user(user_data)
             is_new_user = True
             
-            # Send onboarding email in background for new users only
-            try:
-                from app.services.email.email_service import email_service
-                import asyncio
-                asyncio.create_task(
-                    email_service.send_onboarding_email(
-                        to_email=app_user.email,
-                        user_role=app_user.role,
-                        user_name=app_user.full_name
-                    )
-                )
-            except Exception as e:
-                # Log error but don't fail the registration
-                logger.warning(f"Failed to send onboarding email to {app_user.email}: {e}")
+            # NOTE: Onboarding email will be sent after questionnaire completion
+            # not during signup, to ensure user has completed the onboarding form
             
     elif is_signin:
         # Signin flow - user must exist

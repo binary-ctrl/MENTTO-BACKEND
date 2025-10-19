@@ -56,19 +56,21 @@ class OfflineAlertService:
     def _format_whatsapp_message(self, message: ChatMessageResponse) -> str:
         sender = message.sender_name or "Someone"
         preview = message.content[:200]
-        return f"{sender} sent you a new message on Mentto: \n\n{preview}\n\nOpen the app to reply."
+        return f"{sender} sent you a new message on MenttoConnect: \n\n{preview}\n\nOpen the app to reply."
 
     def _format_email(self, message: ChatMessageResponse) -> Dict[str, str]:
         sender = message.sender_name or "Someone"
-        subject = f"New message from {sender} on Mentto"
+        subject = f"New message from {sender} on MenttoConnect"
         preview = message.content[:300]
+        # Construct auth URL - ensure it works on both mobile and PC
+        auth_url = f"{settings.frontend_url}/auth" if not settings.frontend_url.endswith('/auth') else settings.frontend_url
         html = f"""
         <p>Hi,</p>
-        <p><strong>{sender}</strong> sent you a new message on Mentto.</p>
+        <p><strong>{sender}</strong> sent you a new message on MenttoConnect.</p>
         <blockquote>{preview}</blockquote>
-        <p><a href="{settings.frontend_url}">Open Mentto</a> to reply.</p>
+        <p><a href="{auth_url}">Open MenttoConnect</a> to reply.</p>
         """.strip()
-        text = f"{sender} sent you a new message on Mentto.\n\n{preview}\n\nOpen Mentto to reply: {settings.frontend_url}"
+        text = f"{sender} sent you a new message on MenttoConnect.\n\n{preview}\n\nOpen MenttoConnect to reply: {auth_url}"
         return {"subject": subject, "html": html, "text": text}
 
     async def maybe_notify_offline_recipient(self, message: ChatMessageResponse, is_recipient_online: bool) -> None:

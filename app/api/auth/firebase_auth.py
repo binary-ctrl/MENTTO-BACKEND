@@ -236,20 +236,8 @@ async def find_or_create_user(firebase_user: FirebaseUserInfo, role: str = "", d
                 detail="Failed to create user"
             )
         
-        # Send onboarding email in background (fire-and-forget)
-        try:
-            from app.services.email.email_service import email_service
-            import asyncio
-            asyncio.create_task(
-                email_service.send_onboarding_email(
-                    to_email=result.email,
-                    user_role=result.role,
-                    user_name=result.full_name
-                )
-            )
-        except Exception as e:
-            # Log error but don't fail the registration
-            print(f"DEBUG: Failed to send onboarding email to {result.email}: {e}")
+        # NOTE: Onboarding email will be sent after questionnaire completion
+        # not during signup, to ensure user has completed the onboarding form
         
         return {
             "user_id": result.user_id,

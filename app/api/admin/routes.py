@@ -4,10 +4,16 @@ Admin API routes for managing mentors and users
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from fastapi.responses import JSONResponse
+import logging
+
+logger = logging.getLogger(__name__)
 
 from app.core.database import get_supabase
 from app.core.security.auth_dependencies import get_current_user
-from app.models.models import MentorDetailsResponse, UserResponse
+from app.core.security.admin_auth import get_current_admin
+from app.models.models import MentorDetailsResponse, UserResponse, MentorVerificationUpdate, AdminAccountCreate, AdminAccountResponse
+from app.services.admin.admin_service import admin_service
+from app.services.user.services import mentor_service
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -115,6 +121,15 @@ async def get_all_mentors(
         # Create a lookup for mentor details
         mentor_details_lookup = {detail["user_id"]: detail for detail in mentor_details_data}
         
+        # Get admin user IDs to filter out from mentor list
+        print("Fetching admin user IDs to exclude...")
+        admin_accounts_result = supabase.table("admin_accounts").select("user_id").eq("is_active", True).execute()
+        admin_user_ids = set()
+        if admin_accounts_result.data:
+            admin_user_ids = {admin["user_id"] for admin in admin_accounts_result.data}
+        
+        print(f"Found {len(admin_user_ids)} admin users to filter out")
+        
         # Get current user's mentorship interests to filter out connected mentors
         current_user_id = current_user.user_id
         print(f"Filtering out mentors already connected to user: {current_user_id}")
@@ -127,15 +142,30 @@ async def get_all_mentors(
         
         print(f"Found {len(connected_mentor_ids)} connected mentors to filter out")
         
-        # Combine user data with mentor details (if available) and filter out connected mentors
+        # Combine user data with mentor details (if available) and filter out connected mentors and admin users
         all_mentors = []
         for user in users_result.data:
+            # Skip if this mentor is an admin user
+            if user["user_id"] in admin_user_ids:
+                print(f"Filtering out admin user: {user['user_id']}")
+                continue
+                
             # Skip if this mentor is already connected to the current user
             if user["user_id"] in connected_mentor_ids:
                 print(f"Filtering out connected mentor: {user['user_id']}")
                 continue
                 
             mentor_detail = mentor_details_lookup.get(user["user_id"])
+            
+            # Skip if mentor doesn't have details or verification_status is not "verified"
+            if not mentor_detail:
+                print(f"Filtering out mentor without details: {user['user_id']}")
+                continue
+                
+            if mentor_detail.get("verification_status") != "verified":
+                print(f"Filtering out non-verified mentor: {user['user_id']} (status: {mentor_detail.get('verification_status', 'null')})")
+                continue
+            
             combined_data = {
                 "user_id": user["user_id"],
                 "full_name": user["full_name"],
@@ -143,7 +173,7 @@ async def get_all_mentors(
                 "role": user["role"],
                 "created_at": user["created_at"],
                 "updated_at": user["updated_at"],
-                "mentor_details": mentor_detail  # Will be None if no details exist
+                "mentor_details": mentor_detail
             }
             all_mentors.append(combined_data)
         
@@ -353,4 +383,231 @@ async def get_mentor_stats(current_user = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch mentor stats: {str(e)}"
+        )
+
+# Admin Status Check Endpoint
+@router.get("/check-status", response_model=dict)
+async def check_admin_status(
+    current_user = Depends(get_current_user)
+):
+    """
+    Check if the current user is an admin (returns admin status without requiring admin access)
+    """
+    try:
+        # Get user_id from current_user
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        
+        if not user_id:
+            return {
+                "is_admin": False,
+                "message": "Invalid user token"
+            }
+        
+        # Check if user is an admin
+        is_admin = await admin_service.is_admin_user(user_id)
+        
+        if is_admin:
+            # Get admin account details
+            admin_account = await admin_service.get_admin_account(user_id)
+            return {
+                "is_admin": True,
+                "user_id": user_id,
+                "admin_account_id": admin_account.id if admin_account else None,
+                "email": admin_account.email if admin_account else None,
+                "is_active": admin_account.is_active if admin_account else False,
+                "message": "User is an admin"
+            }
+        else:
+            return {
+                "is_admin": False,
+                "user_id": user_id,
+                "message": "User is not an admin"
+            }
+            
+    except Exception as e:
+        return {
+            "is_admin": False,
+            "message": f"Error checking admin status: {str(e)}"
+        }
+
+# Admin Account Management Endpoints
+@router.post("/accounts", response_model=AdminAccountResponse)
+async def create_admin_account(
+    admin_data: AdminAccountCreate,
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Create a new admin account (only existing admins can create new admin accounts)
+    """
+    try:
+        admin_account = await admin_service.create_admin_account(admin_data)
+        return admin_account
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create admin account: {str(e)}"
+        )
+
+@router.get("/accounts", response_model=List[AdminAccountResponse])
+async def get_all_admin_accounts(
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get all admin accounts (only admins can access this)
+    """
+    try:
+        admin_accounts = await admin_service.get_all_admin_accounts()
+        return admin_accounts
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch admin accounts: {str(e)}"
+        )
+
+# Mentor Verification Management Endpoints
+@router.put("/mentors/{mentor_id}/verification", response_model=dict)
+async def update_mentor_verification_status(
+    mentor_id: str,
+    verification_data: MentorVerificationUpdate,
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Update mentor verification status (only admins can perform this action)
+    """
+    try:
+        admin_user_id = current_admin["user_id"]
+        
+        success = await admin_service.update_mentor_verification_status(
+            mentor_user_id=mentor_id,
+            verification_data=verification_data,
+            admin_user_id=admin_user_id
+        )
+        
+        if success:
+            # Send verification email if status is changed to "verified"
+            if verification_data.verification_status.value == "verified":
+                try:
+                    # Get mentor details to send email
+                    mentor_details = await mentor_service.get_mentor_details_by_user_id(mentor_id)
+                    if mentor_details:
+                        from app.services.email.email_service import email_service
+                        user_name = f"{mentor_details.first_name} {mentor_details.last_name}"
+                        email_result = email_service.send_mentor_verified_email(
+                            to_email=mentor_details.email,
+                            user_name=user_name
+                        )
+                        if email_result.get('success'):
+                            logger.info(f"Verification email sent to mentor {mentor_details.email}")
+                        else:
+                            logger.warning(f"Failed to send verification email to mentor {mentor_details.email}: {email_result.get('message')}")
+                except Exception as email_error:
+                    logger.error(f"Error sending verification email to mentor {mentor_id}: {email_error}")
+                    # Don't fail the verification update if email fails
+            
+            return {
+                "success": True,
+                "message": f"Mentor verification status updated to {verification_data.verification_status.value}",
+                "mentor_id": mentor_id,
+                "verification_status": verification_data.verification_status.value,
+                "updated_by": admin_user_id
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update mentor verification status"
+            )
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update mentor verification status: {str(e)}"
+        )
+
+@router.get("/mentors/pending-verification", response_model=dict)
+async def get_pending_verification_mentors(
+    page: int = Query(1, ge=1, description="Page number (starts from 1)"),
+    size: int = Query(10, ge=1, le=100, description="Number of items per page (max 100)"),
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get mentors with pending verification status (only admins can access this)
+    """
+    try:
+        supabase = get_supabase()
+        
+        # Get admin user IDs to exclude from pending verification list
+        admin_accounts_result = supabase.table("admin_accounts").select("user_id").eq("is_active", True).execute()
+        admin_user_ids = set()
+        if admin_accounts_result.data:
+            admin_user_ids = {admin["user_id"] for admin in admin_accounts_result.data}
+        
+        # Get mentors with pending verification status, excluding admin users
+        offset = (page - 1) * size
+        
+        # First get all pending mentors
+        all_pending_result = supabase.table("mentor_details").select(
+            "*, users!mentor_details_user_id_fkey(user_id, full_name, email, created_at)"
+        ).eq("verification_status", "pending").order("created_at", desc=True).execute()
+        
+        # Filter out admin users
+        filtered_mentors = [
+            mentor for mentor in all_pending_result.data 
+            if mentor["user_id"] not in admin_user_ids
+        ]
+        
+        # Apply pagination to filtered results
+        total = len(filtered_mentors)
+        mentors_page = filtered_mentors[offset:offset + size]
+        
+        mentors = []
+        for mentor in mentors_page:
+            user_data = mentor.get("users", {})
+            mentors.append({
+                "mentor_details": {
+                    "user_id": mentor["user_id"],
+                    "first_name": mentor["first_name"],
+                    "last_name": mentor["last_name"],
+                    "email": mentor["email"],
+                    "university_associated": mentor["university_associated"],
+                    "study_country": mentor["study_country"],
+                    "education_level": mentor["education_level"],
+                    "current_status": mentor["current_status"],
+                    "verification_status": mentor["verification_status"],
+                    "created_at": mentor["created_at"],
+                    "updated_at": mentor["updated_at"]
+                },
+                "user_details": {
+                    "user_id": user_data.get("user_id"),
+                    "full_name": user_data.get("full_name"),
+                    "email": user_data.get("email"),
+                    "created_at": user_data.get("created_at")
+                }
+            })
+        
+        total_pages = (total + size - 1) // size
+        
+        return {
+            "items": mentors,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "size": size,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch pending verification mentors: {str(e)}"
         )

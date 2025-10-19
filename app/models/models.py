@@ -209,12 +209,40 @@ class MentorDetailsUpdate(BaseModel):
 class MentorDetailsResponse(MentorDetailsBase):
     user_id: str
     currency: str = "INR"
+    verification_status: Optional[str] = "pending"  # pending, verified, rejected
     created_at: datetime
     updated_at: datetime
 
     class Config:
         from_attributes = True
 
+
+# Admin Account Models
+class AdminAccountBase(BaseModel):
+    user_id: str
+    email: EmailStr
+    is_active: bool = True
+
+class AdminAccountCreate(AdminAccountBase):
+    pass
+
+class AdminAccountResponse(AdminAccountBase):
+    id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+# Mentor Verification Models
+class MentorVerificationStatus(str, Enum):
+    PENDING = "pending"
+    VERIFIED = "verified"
+    REJECTED = "rejected"
+
+class MentorVerificationUpdate(BaseModel):
+    verification_status: MentorVerificationStatus
+    admin_notes: Optional[str] = None
 
 # Mentorship Interest Models
 class MentorshipInterestStatus(str, Enum):

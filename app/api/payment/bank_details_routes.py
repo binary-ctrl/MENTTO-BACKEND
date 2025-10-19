@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.responses import JSONResponse
-from typing import Optional
+from typing import Optional, Union
 
 from app.core.security.auth_dependencies import get_current_user
 from app.models.models import (
@@ -32,7 +32,7 @@ async def create_bank_details(
             detail=f"Failed to create bank details: {str(e)}"
         )
 
-@router.get("/", response_model=BankDetailsResponse | ErrorResponse)
+@router.get("/", response_model=Union[BankDetailsResponse, ErrorResponse])
 async def get_bank_details(
     current_user = Depends(get_current_user)
 ):

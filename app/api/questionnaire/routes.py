@@ -27,6 +27,30 @@ async def submit_questionnaire(
         questionnaire_data.user_id = current_user.user_id
         
         response = await questionnaire_service.create_questionnaire_response(questionnaire_data)
+        
+        # Send onboarding email after successful questionnaire submission
+        # This ensures the user has completed the onboarding form
+        try:
+            from app.services.email.email_service import email_service
+            import asyncio
+            import logging
+            
+            logger = logging.getLogger(__name__)
+            
+            asyncio.create_task(
+                email_service.send_onboarding_email(
+                    to_email=current_user.email,
+                    user_role=current_user.role,
+                    user_name=current_user.full_name
+                )
+            )
+            logger.info(f"Onboarding email queued for {current_user.email} after questionnaire submission")
+        except Exception as e:
+            # Log error but don't fail the questionnaire submission
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.warning(f"Failed to send onboarding email to {current_user.email}: {e}")
+        
         return response
         
     except Exception as e:
