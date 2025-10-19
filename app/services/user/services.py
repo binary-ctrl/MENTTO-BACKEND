@@ -11,7 +11,32 @@ logger = logging.getLogger(__name__)
 class UserService:
     def __init__(self):
         self.supabase = get_supabase()
-        self.supabase_admin = get_supabase_admin()
+
+    def _parse_datetime(self, datetime_str: str) -> datetime:
+        """Parse datetime string from Supabase with robust error handling"""
+        try:
+            # Handle different datetime formats from Supabase
+            if datetime_str.endswith('Z'):
+                datetime_str = datetime_str.replace('Z', '+00:00')
+            
+            # Try to parse with microseconds handling
+            if '.' in datetime_str and '+' in datetime_str:
+                # Split on the timezone part
+                dt_part, tz_part = datetime_str.rsplit('+', 1)
+                if '.' in dt_part:
+                    # Handle microseconds - normalize to 6 digits
+                    base_dt, microsec = dt_part.split('.')
+                    if len(microsec) > 6:
+                        microsec = microsec[:6]
+                    elif len(microsec) < 6:
+                        # Pad with zeros to make it 6 digits
+                        microsec = microsec.ljust(6, '0')
+                    datetime_str = f"{base_dt}.{microsec}+{tz_part}"
+            
+            return datetime.fromisoformat(datetime_str)
+        except Exception as e:
+            logger.warning(f"Failed to parse datetime '{datetime_str}': {e}, using current time")
+            return datetime.utcnow()
 
     async def create_user(self, user_data: UserCreate) -> UserResponse:
         """Create a new user in Supabase"""
@@ -58,8 +83,8 @@ class UserService:
                     full_name=user_data["full_name"],
                     email=user_data["email"],
                     role=user_data["role"],
-                    created_at=datetime.fromisoformat(user_data["created_at"].replace('Z', '+00:00')),
-                    updated_at=datetime.fromisoformat(user_data["updated_at"].replace('Z', '+00:00'))
+                    created_at=self._parse_datetime(user_data["created_at"]),
+                    updated_at=self._parse_datetime(user_data["updated_at"])
                 )
             return None
 
@@ -79,8 +104,8 @@ class UserService:
                     full_name=user_data["full_name"],
                     email=user_data["email"],
                     role=user_data["role"],
-                    created_at=datetime.fromisoformat(user_data["created_at"].replace('Z', '+00:00')),
-                    updated_at=datetime.fromisoformat(user_data["updated_at"].replace('Z', '+00:00'))
+                    created_at=self._parse_datetime(user_data["created_at"]),
+                    updated_at=self._parse_datetime(user_data["updated_at"])
                 )
             return None
 
@@ -99,8 +124,8 @@ class UserService:
                     full_name=user_data["full_name"],
                     email=user_data["email"],
                     role=user_data["role"],
-                    created_at=datetime.fromisoformat(user_data["created_at"].replace('Z', '+00:00')),
-                    updated_at=datetime.fromisoformat(user_data["updated_at"].replace('Z', '+00:00'))
+                    created_at=self._parse_datetime(user_data["created_at"]),
+                    updated_at=self._parse_datetime(user_data["updated_at"])
                 )
             return None
         except Exception as e:
@@ -119,8 +144,8 @@ class UserService:
                     full_name=user_data["full_name"],
                     email=user_data["email"],
                     role=user_data["role"],
-                    created_at=datetime.fromisoformat(user_data["created_at"].replace('Z', '+00:00')),
-                    updated_at=datetime.fromisoformat(user_data["updated_at"].replace('Z', '+00:00'))
+                    created_at=self._parse_datetime(user_data["created_at"]),
+                    updated_at=self._parse_datetime(user_data["updated_at"])
                 )
             return None
 
@@ -178,6 +203,23 @@ class MenteeService:
 
             if result.data:
                 details_data = result.data[0]
+                
+                # Send onboarding completion email to mentee
+                try:
+                    from app.services.email.email_service import email_service
+                    user_name = f"{mentee_data.first_name} {mentee_data.last_name}"
+                    email_result = email_service.send_mentee_onboarding_email(
+                        to_email=mentee_data.email,
+                        user_name=user_name
+                    )
+                    if email_result.get('success'):
+                        logger.info(f"Onboarding completion email sent to mentee {mentee_data.email}")
+                    else:
+                        logger.warning(f"Failed to send onboarding completion email to mentee {mentee_data.email}: {email_result.get('message')}")
+                except Exception as email_error:
+                    logger.error(f"Error sending onboarding completion email to mentee {mentee_data.email}: {email_error}")
+                    # Don't fail the mentee creation if email fails
+                
                 return self._convert_to_mentee_response(details_data)
             else:
                 raise Exception("Failed to create mentee details")

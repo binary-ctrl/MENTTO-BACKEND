@@ -8,8 +8,12 @@ from app.core.security.auth_dependencies import get_current_user
 from app.models.models import UserResponse, MenteeDetailsResponse, MentorDetailsResponse
 from app.services.user.services import user_service, mentee_service, mentor_service
 from app.services.questionnaire.questionnaire_service import questionnaire_service
+from app.api.user.time_slots_routes import router as time_slots_router
 
 router = APIRouter(prefix="/users", tags=["users"])
+
+# Include time slots routes
+router.include_router(time_slots_router)
 
 @router.get("/me", response_model=UserResponse)
 async def get_current_user_profile(current_user = Depends(get_current_user)):

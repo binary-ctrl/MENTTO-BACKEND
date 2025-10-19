@@ -9,6 +9,7 @@ import logging
 
 from app.core.config import settings
 from app.core.security.auth_dependencies import get_current_user
+from app.utils.url_utils import format_dashboard_url
 from app.services.calendar.calendar_service import calendar_service
 from app.services.calendar.calendar_credentials_service import calendar_credentials_service
 from app.services.calendar.calendar_events_service import calendar_events_service
@@ -201,11 +202,11 @@ async def redirect_to_calendar_auth(current_user: UserResponse = Depends(get_cur
                     
                     # Redirect based on user role since already connected
                     if current_user.role == "mentor":
-                        return RedirectResponse(url=f"{settings.frontend_url}/dashboard/mentor?tab=calls")
+                        return RedirectResponse(url=format_dashboard_url("mentor", "calls"))
                     elif current_user.role == "mentee":
-                        return RedirectResponse(url=f"{settings.frontend_url}/calls")
+                        return RedirectResponse(url=format_dashboard_url("mentee"))
                     else:
-                        return RedirectResponse(url=f"{settings.frontend_url}/dashboard")
+                        return RedirectResponse(url=format_dashboard_url())
             except Exception as sync_error:
                 logger.warning(f"Failed to sync existing calendar for user {user_id}: {sync_error}")
                 # If sync fails, we'll still redirect to re-authorize
@@ -280,16 +281,16 @@ async def calendar_callback(
             if not user:
                 logger.error(f"User not found for user_id: {user_id}")
                 # Fallback to default redirect if user not found
-                return RedirectResponse(url=f"{settings.frontend_url}/dashboard")
+                return RedirectResponse(url=format_dashboard_url())
             
             # Redirect based on user role
             if user.role == "mentor":
-                redirect_url = f"{settings.frontend_url}/dashboard/mentor?tab=calls"
+                redirect_url = format_dashboard_url("mentor", "calls")
             elif user.role == "mentee":
-                redirect_url = f"{settings.frontend_url}/calls"
+                redirect_url = format_dashboard_url("mentee")
             else:
                 # Default fallback for unknown roles
-                redirect_url = f"{settings.frontend_url}/dashboard"
+                redirect_url = format_dashboard_url()
             
             logger.info(f"Redirecting user {user_id} (role: {user.role}) to {redirect_url}")
             return RedirectResponse(url=redirect_url)
@@ -297,7 +298,7 @@ async def calendar_callback(
         except Exception as user_error:
             logger.error(f"Error getting user details for redirect: {user_error}")
             # Fallback to default redirect if user lookup fails
-            return RedirectResponse(url=f"{settings.frontend_url}/dashboard")
+            return RedirectResponse(url=format_dashboard_url())
         
     except HTTPException:
         raise

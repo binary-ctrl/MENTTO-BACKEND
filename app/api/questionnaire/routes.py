@@ -28,8 +28,9 @@ async def submit_questionnaire(
         
         response = await questionnaire_service.create_questionnaire_response(questionnaire_data)
         
-        # Send onboarding email after successful questionnaire submission
-        # This ensures the user has completed the onboarding form
+        # Send appropriate email after successful questionnaire submission
+        # For parents, this is their profile completion, so send completion email
+        # For mentees and mentors, this is just the initial onboarding
         try:
             from app.services.email.email_service import email_service
             import asyncio
@@ -37,19 +38,31 @@ async def submit_questionnaire(
             
             logger = logging.getLogger(__name__)
             
-            asyncio.create_task(
-                email_service.send_onboarding_email(
-                    to_email=current_user.email,
-                    user_role=current_user.role,
-                    user_name=current_user.full_name
+            if current_user.role == "parent":
+                # For parents, questionnaire submission IS their profile completion
+                asyncio.create_task(
+                    email_service.send_parent_onboarding_email(
+                        to_email=current_user.email,
+                        user_name=current_user.full_name,
+                        ward_name=questionnaire_data.ward_name if hasattr(questionnaire_data, 'ward_name') else None
+                    )
                 )
-            )
-            logger.info(f"Onboarding email queued for {current_user.email} after questionnaire submission")
+                logger.info(f"Parent completion email queued for {current_user.email} after questionnaire submission")
+            else:
+                # For mentees and mentors, this is just the initial onboarding
+                asyncio.create_task(
+                    email_service.send_onboarding_email(
+                        to_email=current_user.email,
+                        user_role=current_user.role,
+                        user_name=current_user.full_name
+                    )
+                )
+                logger.info(f"Onboarding email queued for {current_user.email} after questionnaire submission")
         except Exception as e:
             # Log error but don't fail the questionnaire submission
             import logging
             logger = logging.getLogger(__name__)
-            logger.warning(f"Failed to send onboarding email to {current_user.email}: {e}")
+            logger.warning(f"Failed to send email to {current_user.email}: {e}")
         
         return response
         

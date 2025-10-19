@@ -12,6 +12,7 @@ from app.core.config import settings
 from app.core.security.firebase_auth import verify_firebase_token
 from app.core.security.jwt_auth import create_user_token
 from app.core.security.auth_dependencies import get_current_user
+from app.utils.url_utils import format_dashboard_url
 from app.models.models import (
     FirebaseTokenRequest, TokenResponse, UserResponse,
     EmailPasswordSignupRequest, EmailPasswordLoginRequest
@@ -462,7 +463,8 @@ async def google_callback(code: str, state: Optional[str] = None, error: Optiona
     )
 
     # Redirect to frontend with token and user info based on role and flow
-    frontend = settings.frontend_url or "http://localhost:8080"
+    from app.utils.url_utils import format_frontend_url
+    frontend = format_frontend_url()
     
     if is_signup and is_new_user:
         # Role-based redirects for new users

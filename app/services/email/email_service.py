@@ -422,7 +422,7 @@ class EmailService:
                         
                         <div class="contact">
                             <p>If you need anything, just reach out:<br>
-                            📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a></p>
+                            📧 <a href="mailto:contact@mentto.in" style="color: white;">contact@mentto.in</a></p>
                         </div>
                         
                         <p>We're thrilled to have you on board. Let's make your study journey clearer, smarter, and a lot less overwhelming together.</p>
@@ -430,7 +430,7 @@ class EmailService:
                         <p>Warmly,<br>Team Mentto</p>
                     </div>
                     <div class="footer">
-                        <div class="brand">🌐 www.mentto.in</div>
+                        <div class="brand">🌐 mentto.in</div>
                     </div>
                 </div>
             </body>
@@ -465,7 +465,7 @@ class EmailService:
             Warmly,
             Team Mentto
             
-            🌐 www.mentto.in
+            🌐 mentto.in
             """
             
             # Send email
@@ -553,11 +553,12 @@ class EmailService:
                         font-weight: bold; 
                     }}
                     .contact {{ 
-                        background-color: #f0fdf4; 
+                        background-color: #32898b; 
                         padding: 15px; 
                         border-radius: 6px; 
                         margin: 20px 0; 
                         text-align: center;
+                        color: white;
                     }}
                 </style>
             </head>
@@ -581,8 +582,8 @@ class EmailService:
                         <p>Warmly,<br>Team Mentto</p>
                         
                         <div class="contact">
-                            <p>📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a><br>
-                            🌐 <a href="https://www.mentto.in" style="color: #32898b;">www.mentto.in</a></p>
+                            <p>                            📧 <a href="mailto:contact@mentto.in" style="color: white;">contact@mentto.in</a><br>
+                            🌐 <a href="https://mentto.in" style="color: white;">mentto.in</a></p>
                         </div>
                     </div>
                 </div>
@@ -605,7 +606,7 @@ class EmailService:
             Warmly,
             Team Mentto
             📧 contact@mentto.in
-            🌐 www.mentto.in
+            🌐 mentto.in
             """
             
             # Send email
@@ -745,7 +746,7 @@ class EmailService:
                         
                         <div class="contact">
                             <p>If you need anything, just reach out:<br>
-                            📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a></p>
+                            📧 <a href="mailto:contact@mentto.in" style="color: white;">contact@mentto.in</a></p>
                         </div>
                         
                         <p>We're thrilled to have you as part of the Mentto community – together, let's make your child's career journey clearer, smarter, and stress-free.</p>
@@ -753,7 +754,7 @@ class EmailService:
                         <p>Warmly,<br>Team Mentto</p>
                     </div>
                     <div class="footer">
-                        <div class="brand">🌐 www.mentto.in</div>
+                        <div class="brand">🌐 mentto.in</div>
                     </div>
                 </div>
             </body>
@@ -788,7 +789,7 @@ class EmailService:
             Warmly,
             Team Mentto
             
-            🌐 www.mentto.in
+            🌐 mentto.in
             """
             
             # Send email
@@ -894,11 +895,12 @@ class EmailService:
                         font-weight: bold; 
                     }}
                     .contact {{ 
-                        background-color: #f0fdf4; 
+                        background-color: #32898b; 
                         padding: 15px; 
                         border-radius: 6px; 
                         margin: 20px 0; 
                         text-align: center;
+                        color: white;
                     }}
                 </style>
             </head>
@@ -932,8 +934,8 @@ class EmailService:
                         <p>Best regards,<br>Team Mentto</p>
                         
                         <div class="contact">
-                            <p>📧 <a href="mailto:contact@mentto.in" style="color: #32898b;">contact@mentto.in</a><br>
-                            🌐 <a href="https://www.mentto.in" style="color: #32898b;">www.mentto.in</a></p>
+                            <p>                            📧 <a href="mailto:contact@mentto.in" style="color: white;">contact@mentto.in</a><br>
+                            🌐 <a href="https://mentto.in" style="color: white;">mentto.in</a></p>
                         </div>
                     </div>
                 </div>
@@ -965,7 +967,7 @@ class EmailService:
             Team Mentto
             
             📧 contact@mentto.in
-            🌐 www.mentto.in
+            🌐 mentto.in
             """
             
             # Send email
@@ -1033,7 +1035,7 @@ class EmailService:
                         text-align: center;
                     }}
                     .success-notice {{ 
-                        background-color: #d1fae5; 
+                        background-color: white; 
                         padding: 20px; 
                         border-radius: 6px; 
                         margin: 20px 0; 
@@ -1100,7 +1102,7 @@ class EmailService:
                         <p>Warm regards,<br>Team Mentto</p>
                         
                         <div class="footer">
-                            <p>🌐 <a href="https://www.mentto.in" class="brand">www.mentto.in</a></p>
+                            <p>🌐 <a href="https://mentto.in" class="brand">mentto.in</a></p>
                         </div>
                     </div>
                 </div>
@@ -1134,7 +1136,7 @@ class EmailService:
             
             Warm regards,
             Team Mentto
-            🌐 www.mentto.in
+            🌐 mentto.in
             """
             
             # Send email

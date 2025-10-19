@@ -1284,3 +1284,115 @@ class TransferResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# User Time Slots Models
+class TimeSlotStatus(str, Enum):
+    AVAILABLE = "available"
+    BOOKED = "booked"
+    BLOCKED = "blocked"
+    CANCELLED = "cancelled"
+
+class UserTimeSlotCreate(BaseModel):
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
+    start_time: str = Field(..., description="Start time in HH:MM format (24-hour)")
+    end_time: str = Field(..., description="End time in HH:MM format (24-hour)")
+    timezone: str = Field(default="UTC", description="Timezone for the slot")
+    title: Optional[str] = Field(None, description="Optional title for the slot")
+    description: Optional[str] = Field(None, max_length=500, description="Optional description")
+    is_recurring: bool = Field(default=True, description="Whether this is a recurring slot")
+    recurring_pattern: Optional[str] = Field(default="weekly", description="Recurring pattern (daily, weekly, monthly)")
+
+class UserTimeSlotUpdate(BaseModel):
+    day_of_week: Optional[int] = Field(None, ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
+    start_time: Optional[str] = Field(None, description="Start time in HH:MM format (24-hour)")
+    end_time: Optional[str] = Field(None, description="End time in HH:MM format (24-hour)")
+    timezone: Optional[str] = None
+    title: Optional[str] = None
+    description: Optional[str] = Field(None, max_length=500)
+    status: Optional[TimeSlotStatus] = None
+    is_recurring: Optional[bool] = None
+    recurring_pattern: Optional[str] = None
+
+class UserTimeSlotResponse(BaseModel):
+    id: str
+    user_id: str
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
+    start_time: str = Field(..., description="Start time in HH:MM format (24-hour)")
+    end_time: str = Field(..., description="End time in HH:MM format (24-hour)")
+    timezone: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+    status: TimeSlotStatus
+    is_recurring: bool
+    recurring_pattern: Optional[str] = None
+    duration_minutes: int
+    created_at: datetime
+    updated_at: datetime
+    
+    # Include user details for better API responses
+    user_name: Optional[str] = None
+    user_email: Optional[str] = None
+    
+    # Human-readable day name
+    day_name: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+class UserTimeSlotBulkCreate(BaseModel):
+    start_date: str = Field(..., description="Start date in YYYY-MM-DD format")
+    end_date: str = Field(..., description="End date in YYYY-MM-DD format")
+    start_time: str = Field(..., description="Start time in HH:MM format (24-hour)")
+    end_time: str = Field(..., description="End time in HH:MM format (24-hour)")
+    timezone: str = Field(default="UTC", description="Timezone for the slots")
+    days_of_week: List[int] = Field(..., description="Days of week (0=Monday, 6=Sunday)")
+    title: Optional[str] = Field(None, description="Optional title for the slots")
+    description: Optional[str] = Field(None, max_length=500, description="Optional description")
+    slot_duration_minutes: int = Field(default=45, description="Duration of each slot in minutes")
+
+class UserTimeSlotDayCreate(BaseModel):
+    date: str = Field(..., description="Date in YYYY-MM-DD format")
+    timezone: str = Field(default="UTC", description="Timezone for the slots")
+    title: Optional[str] = Field(None, description="Optional title for the slots")
+    description: Optional[str] = Field(None, max_length=500, description="Optional description")
+    slot_duration_minutes: int = Field(default=45, description="Duration of each slot in minutes")
+    time_slots: List[Dict[str, str]] = Field(..., description="List of time slots with start_time and end_time in HH:MM format")
+    break_between_slots_minutes: int = Field(default=15, description="Break time between slots in minutes")
+
+class DaySlotConfig(BaseModel):
+    day_of_week: int = Field(..., ge=0, le=6, description="Day of week (0=Monday, 6=Sunday)")
+    start_time: str = Field(..., description="Start time in HH:MM format (24-hour)")
+    end_time: str = Field(..., description="End time in HH:MM format (24-hour)")
+
+class UserTimeSlotFlexibleCreate(BaseModel):
+    start_date: str = Field(..., description="Start date in YYYY-MM-DD format")
+    end_date: str = Field(..., description="End date in YYYY-MM-DD format")
+    timezone: str = Field(default="UTC", description="Timezone for the slots")
+    title: Optional[str] = Field(None, description="Optional title for the slots")
+    description: Optional[str] = Field(None, max_length=500, description="Optional description")
+    day_configs: List[DaySlotConfig] = Field(..., description="Configuration for each day of the week")
+
+class UserTimeSlotWeeklyCreate(BaseModel):
+    timezone: str = Field(default="UTC", description="Timezone for the slots")
+    title: Optional[str] = Field(None, description="Optional title for the slots")
+    description: Optional[str] = Field(None, max_length=500, description="Optional description")
+    day_configs: List[DaySlotConfig] = Field(..., description="Configuration for each day of the week")
+    weeks_ahead: int = Field(default=4, ge=1, le=12, description="Number of weeks to create slots for")
+
+class UserTimeSlotBulkResponse(BaseModel):
+    success: bool
+    message: str
+    slots_created: int
+    slots: List[UserTimeSlotResponse]
+    date_range: Dict[str, str]
+    timezone: str
+
+class UserTimeSlotSummary(BaseModel):
+    total_slots: int
+    available_slots: int
+    booked_slots: int
+    blocked_slots: int
+    upcoming_slots: int
+    next_available_slot: Optional[UserTimeSlotResponse] = None
+    recent_slots: List[UserTimeSlotResponse] = []

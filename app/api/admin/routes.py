@@ -65,13 +65,14 @@ async def get_all_mentors(
     search: Optional[str] = Query(None, description="Search by name, email, or university"),
     country: Optional[str] = Query(None, description="Filter by study country"),
     university: Optional[str] = Query(None, description="Filter by university"),
+    verification_status: Optional[str] = Query(None, description="Filter by verification status (verified, pending, rejected)"),
     current_user = Depends(get_current_user)
 ):
     """
     Get all mentors with pagination and optional filtering
     """
     try:
-        # Check admin access
+        # Check admin access    
         check_admin_access(current_user)
         
         # Get Supabase client
@@ -121,26 +122,29 @@ async def get_all_mentors(
         # Create a lookup for mentor details
         mentor_details_lookup = {detail["user_id"]: detail for detail in mentor_details_data}
         
-        # Get admin user IDs to filter out from mentor list
-        print("Fetching admin user IDs to exclude...")
-        admin_accounts_result = supabase.table("admin_accounts").select("user_id").eq("is_active", True).execute()
-        admin_user_ids = set()
-        if admin_accounts_result.data:
-            admin_user_ids = {admin["user_id"] for admin in admin_accounts_result.data}
-        
-        print(f"Found {len(admin_user_ids)} admin users to filter out")
-        
-        # Get current user's mentorship interests to filter out connected mentors
+        # Check if current user is an admin
         current_user_id = current_user.user_id
-        print(f"Filtering out mentors already connected to user: {current_user_id}")
+        is_current_user_admin = await admin_service.is_admin_user(current_user_id)
+        print(f"Current user {current_user_id} is admin: {is_current_user_admin}")
         
-        # Get mentorship interests where current user is mentee
-        mentorship_interests_result = supabase.table("mentorship_interest").select("mentor_id").eq("mentee_id", current_user_id).execute()
+        # Get admin user IDs to filter out from mentor list (only if current user is not an admin)
+        admin_user_ids = set()
+        if not is_current_user_admin:
+            print("Fetching admin user IDs to exclude...")
+            admin_accounts_result = supabase.table("admin_accounts").select("user_id").eq("is_active", True).execute()
+            if admin_accounts_result.data:
+                admin_user_ids = {admin["user_id"] for admin in admin_accounts_result.data}
+            print(f"Found {len(admin_user_ids)} admin users to filter out")
+        
+        # Get current user's mentorship interests to filter out connected mentors (only if current user is not an admin)
         connected_mentor_ids = set()
-        if mentorship_interests_result.data:
-            connected_mentor_ids = {interest["mentor_id"] for interest in mentorship_interests_result.data}
-        
-        print(f"Found {len(connected_mentor_ids)} connected mentors to filter out")
+        if not is_current_user_admin:
+            print(f"Filtering out mentors already connected to user: {current_user_id}")
+            # Get mentorship interests where current user is mentee
+            mentorship_interests_result = supabase.table("mentorship_interest").select("mentor_id").eq("mentee_id", current_user_id).execute()
+            if mentorship_interests_result.data:
+                connected_mentor_ids = {interest["mentor_id"] for interest in mentorship_interests_result.data}
+            print(f"Found {len(connected_mentor_ids)} connected mentors to filter out")
         
         # Combine user data with mentor details (if available) and filter out connected mentors and admin users
         all_mentors = []
@@ -157,13 +161,19 @@ async def get_all_mentors(
                 
             mentor_detail = mentor_details_lookup.get(user["user_id"])
             
-            # Skip if mentor doesn't have details or verification_status is not "verified"
+            # Skip if mentor doesn't have details
             if not mentor_detail:
                 print(f"Filtering out mentor without details: {user['user_id']}")
                 continue
                 
-            if mentor_detail.get("verification_status") != "verified":
-                print(f"Filtering out non-verified mentor: {user['user_id']} (status: {mentor_detail.get('verification_status', 'null')})")
+            # Always exclude mentors with pending verification status
+            if mentor_detail.get("verification_status") == "pending":
+                print(f"Filtering out mentor with pending verification status: {user['user_id']}")
+                continue
+                
+            # Apply verification status filter if specified (only for non-admin users)
+            if not is_current_user_admin and verification_status and mentor_detail.get("verification_status") != verification_status:
+                print(f"Filtering out mentor with different verification status: {user['user_id']} (status: {mentor_detail.get('verification_status', 'null')}, filter: {verification_status})")
                 continue
             
             combined_data = {
@@ -244,6 +254,85 @@ async def get_all_mentors(
         import traceback
         error_details = traceback.format_exc()
         print(f"Error in get_all_mentors: {str(e)}")
+        print(f"Traceback: {error_details}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch mentors: {str(e)}"
+        )
+
+@router.get("/mentors/all", response_model=dict)
+async def get_all_mentors_for_admin(
+    page: int = Query(1, ge=1, description="Page number (starts from 1)"),
+    size: int = Query(10, ge=1, le=100, description="Number of items per page (max 100)"),
+    verification_status: Optional[str] = Query(None, description="Filter by verification status (verified, pending, rejected)"),
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get ALL mentors for admin verification management (excludes admin users)
+    """
+    try:
+        supabase = get_supabase()
+        
+        # Get admin user IDs to filter out from mentor list
+        print("Fetching admin user IDs to exclude...")
+        admin_accounts_result = supabase.table("admin_accounts").select("user_id").eq("is_active", True).execute()
+        admin_user_ids = set()
+        if admin_accounts_result.data:
+            admin_user_ids = {admin["user_id"] for admin in admin_accounts_result.data}
+        print(f"Found {len(admin_user_ids)} admin users to filter out")
+        
+        # Get all mentor details first (without pagination to filter admin users)
+        query = supabase.table("mentor_details").select("*")
+        
+        # Apply verification status filter if specified
+        if verification_status:
+            query = query.eq("verification_status", verification_status)
+        
+        # Get all results first
+        result = query.execute()
+        all_mentor_details = result.data or []
+        
+        # Filter out admin users from mentor details
+        filtered_mentor_details = []
+        for mentor_detail in all_mentor_details:
+            if mentor_detail["user_id"] not in admin_user_ids:
+                filtered_mentor_details.append(mentor_detail)
+        
+        # Calculate total after filtering
+        total = len(filtered_mentor_details)
+        
+        # Apply pagination to filtered results
+        offset = (page - 1) * size
+        paginated_mentor_details = filtered_mentor_details[offset:offset + size]
+        
+        # Get corresponding user details for paginated mentors
+        user_ids = [mentor["user_id"] for mentor in paginated_mentor_details]
+        users_result = supabase.table("users").select("user_id, full_name, email, role, created_at, updated_at").in_("user_id", user_ids).execute()
+        users_lookup = {user["user_id"]: user for user in users_result.data or []}
+        
+        # Combine mentor details with user details
+        mentors_list = []
+        for mentor_detail in paginated_mentor_details:
+            user_detail = users_lookup.get(mentor_detail["user_id"])
+            mentors_list.append({
+                "mentor_details": mentor_detail,
+                "user_details": user_detail
+            })
+        
+        # Create paginated response
+        paginated_response = PaginatedResponse(
+            items=mentors_list,
+            total=total,
+            page=page,
+            size=size
+        )
+        
+        return paginated_response.dict()
+        
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in get_all_mentors_for_admin: {str(e)}")
         print(f"Traceback: {error_details}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -530,6 +619,7 @@ async def update_mentor_verification_status(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to update mentor verification status: {str(e)}"
         )
+
 
 @router.get("/mentors/pending-verification", response_model=dict)
 async def get_pending_verification_mentors(
