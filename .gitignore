@@ -1,0 +1,42 @@
+# Virtual Environment
+mentto-env/
+venv/
+env/
+
+# Environment files
+.env
+.env.local
+.env.production
+
+# Credentials
+credentials.json
+users.json
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Database
+*.db
+*.sqlite3
+
+# Temporary files
+*.tmp
+*.temp
