@@ -728,10 +728,83 @@ class MentorshipInterestService:
     async def get_interests_by_mentee(self, mentee_id: str) -> List[MentorshipInterestResponse]:
         """Get all interests by a mentee"""
         try:
-            result = self.supabase.table("mentorship_interest").select("*, mentee:users!mentorship_interest_mentee_id_fkey(full_name, email), mentor:users!mentorship_interest_mentor_id_fkey(full_name, email)").eq("mentee_id", mentee_id).execute()
+            result = self.supabase.table("mentorship_interest").select("*").eq("mentee_id", mentee_id).execute()
             
             interests = []
             for data in result.data:
+                # Get mentee and mentor details separately
+                mentee_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentee_id"]).execute()
+                mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
+                
+                # Get mentee details from mentee_details table
+                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
+                
+                # Get mentor details from mentor_details table
+                mentor_details_result = self.supabase.table("mentor_details").select("first_name, last_name, phone_number, email, study_country, university_associated, graduation_date, university_relationship, education_level, course_enrolled, current_grade, current_residence, work_experience_years, current_status, current_designation, industries_worked, companies_worked, hobbies, self_description, how_can_help, mentorship_fee, currency, previous_mentoring_experience, brief_introduction, mentorship_hours_per_week").eq("user_id", data["mentor_id"]).execute()
+                
+                # Add user details to interest data
+                if mentee_result.data:
+                    mentee_data = {
+                        "full_name": mentee_result.data[0]["full_name"],
+                        "email": mentee_result.data[0]["email"]
+                    }
+                    
+                    # Add mentee details if available
+                    if mentee_details_result.data:
+                        mentee_details = mentee_details_result.data[0]
+                        mentee_data.update({
+                            "first_name": mentee_details.get("first_name"),
+                            "last_name": mentee_details.get("last_name"),
+                            "phone_number": mentee_details.get("phone_number"),
+                            "countries_considering": mentee_details.get("countries_considering"),
+                            "education_level": mentee_details.get("education_level"),
+                            "why_study_abroad": mentee_details.get("why_study_abroad"),
+                            "intake_applying_for": mentee_details.get("intake_applying_for"),
+                            "year_planning_abroad": mentee_details.get("year_planning_abroad"),
+                            "target_industry": mentee_details.get("target_industry"),
+                            "self_description": mentee_details.get("self_description")
+                        })
+                    
+                    data["mentee"] = mentee_data
+                
+                if mentor_result.data:
+                    mentor_data = {
+                        "full_name": mentor_result.data[0]["full_name"],
+                        "email": mentor_result.data[0]["email"]
+                    }
+                    
+                    # Add mentor details if available
+                    if mentor_details_result.data:
+                        mentor_details = mentor_details_result.data[0]
+                        mentor_data.update({
+                            "first_name": mentor_details.get("first_name"),
+                            "last_name": mentor_details.get("last_name"),
+                            "phone_number": mentor_details.get("phone_number"),
+                            "study_country": mentor_details.get("study_country"),
+                            "university_associated": mentor_details.get("university_associated"),
+                            "graduation_date": mentor_details.get("graduation_date"),
+                            "university_relationship": mentor_details.get("university_relationship"),
+                            "education_level": mentor_details.get("education_level"),
+                            "course_enrolled": mentor_details.get("course_enrolled"),
+                            "current_grade": mentor_details.get("current_grade"),
+                            "current_residence": mentor_details.get("current_residence"),
+                            "work_experience_years": mentor_details.get("work_experience_years"),
+                            "current_status": mentor_details.get("current_status"),
+                            "current_designation": mentor_details.get("current_designation"),
+                            "industries_worked": mentor_details.get("industries_worked"),
+                            "companies_worked": mentor_details.get("companies_worked"),
+                            "hobbies": mentor_details.get("hobbies"),
+                            "self_description": mentor_details.get("self_description"),
+                            "how_can_help": mentor_details.get("how_can_help"),
+                            "mentorship_fee": mentor_details.get("mentorship_fee"),
+                            "currency": mentor_details.get("currency"),
+                            "previous_mentoring_experience": mentor_details.get("previous_mentoring_experience"),
+                            "brief_introduction": mentor_details.get("brief_introduction"),
+                            "mentorship_hours_per_week": mentor_details.get("mentorship_hours_per_week")
+                        })
+                    
+                    data["mentor"] = mentor_data
+                
                 interests.append(await self._convert_to_interest_response(data))
             return interests
 
@@ -742,10 +815,83 @@ class MentorshipInterestService:
     async def get_interests_by_mentee_and_status(self, mentee_id: str, status: str) -> List[MentorshipInterestResponse]:
         """Get mentorship interests for a mentee filtered by status"""
         try:
-            result = self.supabase.table("mentorship_interest").select("*, mentee:users!mentorship_interest_mentee_id_fkey(full_name, email), mentor:users!mentorship_interest_mentor_id_fkey(full_name, email)").eq("mentee_id", mentee_id).eq("status", status).execute()
+            result = self.supabase.table("mentorship_interest").select("*").eq("mentee_id", mentee_id).eq("status", status).execute()
             
             interests = []
             for data in result.data:
+                # Get mentee and mentor details separately
+                mentee_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentee_id"]).execute()
+                mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
+                
+                # Get mentee details from mentee_details table
+                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
+                
+                # Get mentor details from mentor_details table
+                mentor_details_result = self.supabase.table("mentor_details").select("first_name, last_name, phone_number, email, study_country, university_associated, graduation_date, university_relationship, education_level, course_enrolled, current_grade, current_residence, work_experience_years, current_status, current_designation, industries_worked, companies_worked, hobbies, self_description, how_can_help, mentorship_fee, currency, previous_mentoring_experience, brief_introduction, mentorship_hours_per_week").eq("user_id", data["mentor_id"]).execute()
+                
+                # Add user details to interest data
+                if mentee_result.data:
+                    mentee_data = {
+                        "full_name": mentee_result.data[0]["full_name"],
+                        "email": mentee_result.data[0]["email"]
+                    }
+                    
+                    # Add mentee details if available
+                    if mentee_details_result.data:
+                        mentee_details = mentee_details_result.data[0]
+                        mentee_data.update({
+                            "first_name": mentee_details.get("first_name"),
+                            "last_name": mentee_details.get("last_name"),
+                            "phone_number": mentee_details.get("phone_number"),
+                            "countries_considering": mentee_details.get("countries_considering"),
+                            "education_level": mentee_details.get("education_level"),
+                            "why_study_abroad": mentee_details.get("why_study_abroad"),
+                            "intake_applying_for": mentee_details.get("intake_applying_for"),
+                            "year_planning_abroad": mentee_details.get("year_planning_abroad"),
+                            "target_industry": mentee_details.get("target_industry"),
+                            "self_description": mentee_details.get("self_description")
+                        })
+                    
+                    data["mentee"] = mentee_data
+                
+                if mentor_result.data:
+                    mentor_data = {
+                        "full_name": mentor_result.data[0]["full_name"],
+                        "email": mentor_result.data[0]["email"]
+                    }
+                    
+                    # Add mentor details if available
+                    if mentor_details_result.data:
+                        mentor_details = mentor_details_result.data[0]
+                        mentor_data.update({
+                            "first_name": mentor_details.get("first_name"),
+                            "last_name": mentor_details.get("last_name"),
+                            "phone_number": mentor_details.get("phone_number"),
+                            "study_country": mentor_details.get("study_country"),
+                            "university_associated": mentor_details.get("university_associated"),
+                            "graduation_date": mentor_details.get("graduation_date"),
+                            "university_relationship": mentor_details.get("university_relationship"),
+                            "education_level": mentor_details.get("education_level"),
+                            "course_enrolled": mentor_details.get("course_enrolled"),
+                            "current_grade": mentor_details.get("current_grade"),
+                            "current_residence": mentor_details.get("current_residence"),
+                            "work_experience_years": mentor_details.get("work_experience_years"),
+                            "current_status": mentor_details.get("current_status"),
+                            "current_designation": mentor_details.get("current_designation"),
+                            "industries_worked": mentor_details.get("industries_worked"),
+                            "companies_worked": mentor_details.get("companies_worked"),
+                            "hobbies": mentor_details.get("hobbies"),
+                            "self_description": mentor_details.get("self_description"),
+                            "how_can_help": mentor_details.get("how_can_help"),
+                            "mentorship_fee": mentor_details.get("mentorship_fee"),
+                            "currency": mentor_details.get("currency"),
+                            "previous_mentoring_experience": mentor_details.get("previous_mentoring_experience"),
+                            "brief_introduction": mentor_details.get("brief_introduction"),
+                            "mentorship_hours_per_week": mentor_details.get("mentorship_hours_per_week")
+                        })
+                    
+                    data["mentor"] = mentor_data
+                
                 interests.append(await self._convert_to_interest_response(data))
             return interests
 
@@ -1037,7 +1183,32 @@ class MentorshipInterestService:
             mentee_intake_applying_for=data.get("mentee", {}).get("intake_applying_for") if data.get("mentee") else None,
             mentee_year_planning_abroad=data.get("mentee", {}).get("year_planning_abroad") if data.get("mentee") else None,
             mentee_target_industry=data.get("mentee", {}).get("target_industry") if data.get("mentee") else None,
-            mentee_self_description=data.get("mentee", {}).get("self_description") if data.get("mentee") else None
+            mentee_self_description=data.get("mentee", {}).get("self_description") if data.get("mentee") else None,
+            # Additional mentor details from mentor onboarding
+            mentor_first_name=data.get("mentor", {}).get("first_name") if data.get("mentor") else None,
+            mentor_last_name=data.get("mentor", {}).get("last_name") if data.get("mentor") else None,
+            mentor_phone_number=data.get("mentor", {}).get("phone_number") if data.get("mentor") else None,
+            mentor_study_country=data.get("mentor", {}).get("study_country") if data.get("mentor") else None,
+            mentor_university_associated=data.get("mentor", {}).get("university_associated") if data.get("mentor") else None,
+            mentor_graduation_date=data.get("mentor", {}).get("graduation_date") if data.get("mentor") else None,
+            mentor_university_relationship=data.get("mentor", {}).get("university_relationship") if data.get("mentor") else None,
+            mentor_education_level=data.get("mentor", {}).get("education_level") if data.get("mentor") else None,
+            mentor_course_enrolled=data.get("mentor", {}).get("course_enrolled") if data.get("mentor") else None,
+            mentor_current_grade=data.get("mentor", {}).get("current_grade") if data.get("mentor") else None,
+            mentor_current_residence=data.get("mentor", {}).get("current_residence") if data.get("mentor") else None,
+            mentor_work_experience_years=data.get("mentor", {}).get("work_experience_years") if data.get("mentor") else None,
+            mentor_current_status=data.get("mentor", {}).get("current_status") if data.get("mentor") else None,
+            mentor_current_designation=data.get("mentor", {}).get("current_designation") if data.get("mentor") else None,
+            mentor_industries_worked=data.get("mentor", {}).get("industries_worked") if data.get("mentor") else None,
+            mentor_companies_worked=data.get("mentor", {}).get("companies_worked") if data.get("mentor") else None,
+            mentor_hobbies=data.get("mentor", {}).get("hobbies") if data.get("mentor") else None,
+            mentor_self_description=data.get("mentor", {}).get("self_description") if data.get("mentor") else None,
+            mentor_how_can_help=data.get("mentor", {}).get("how_can_help") if data.get("mentor") else None,
+            mentor_mentorship_fee=data.get("mentor", {}).get("mentorship_fee") if data.get("mentor") else None,
+            mentor_currency=data.get("mentor", {}).get("currency") if data.get("mentor") else None,
+            mentor_previous_mentoring_experience=data.get("mentor", {}).get("previous_mentoring_experience") if data.get("mentor") else None,
+            mentor_brief_introduction=data.get("mentor", {}).get("brief_introduction") if data.get("mentor") else None,
+            mentor_mentorship_hours_per_week=data.get("mentor", {}).get("mentorship_hours_per_week") if data.get("mentor") else None
         )
 
 

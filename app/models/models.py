@@ -251,6 +251,38 @@ class MentorshipInterestStatus(str, Enum):
     REJECTED = "rejected"
 
 
+# Email Logging Models
+class EmailStatus(str, Enum):
+    PENDING = "pending"
+    SENT = "sent"
+    FAILED = "failed"
+    RETRYING = "retrying"
+
+
+class EmailLogBase(BaseModel):
+    recipient_email: EmailStr
+    subject: str
+    email_type: str  # e.g., "mentor_verification", "mentor_verified", "onboarding"
+    status: EmailStatus
+    error_message: Optional[str] = None
+    retry_count: int = 0
+    max_retries: int = 3
+    sent_at: Optional[datetime] = None
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+
+
+class EmailLogCreate(EmailLogBase):
+    pass
+
+
+class EmailLogResponse(EmailLogBase):
+    id: str
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class MentorshipInterestCreate(BaseModel):
     mentor_id: str
     message: Optional[str] = None
@@ -290,6 +322,32 @@ class MentorshipInterestResponse(BaseModel):
     mentee_year_planning_abroad: Optional[str] = None
     mentee_target_industry: Optional[List[str]] = None
     mentee_self_description: Optional[str] = None
+    
+    # Additional mentor details from mentor onboarding
+    mentor_first_name: Optional[str] = None
+    mentor_last_name: Optional[str] = None
+    mentor_phone_number: Optional[str] = None
+    mentor_study_country: Optional[str] = None
+    mentor_university_associated: Optional[str] = None
+    mentor_graduation_date: Optional[str] = None
+    mentor_university_relationship: Optional[str] = None
+    mentor_education_level: Optional[str] = None
+    mentor_course_enrolled: Optional[str] = None
+    mentor_current_grade: Optional[str] = None
+    mentor_current_residence: Optional[str] = None
+    mentor_work_experience_years: Optional[int] = None
+    mentor_current_status: Optional[str] = None
+    mentor_current_designation: Optional[str] = None
+    mentor_industries_worked: Optional[List[str]] = None
+    mentor_companies_worked: Optional[List[str]] = None
+    mentor_hobbies: Optional[List[str]] = None
+    mentor_self_description: Optional[str] = None
+    mentor_how_can_help: Optional[List[str]] = None
+    mentor_mentorship_fee: Optional[float] = None
+    mentor_currency: Optional[str] = None
+    mentor_previous_mentoring_experience: Optional[bool] = None
+    mentor_brief_introduction: Optional[str] = None
+    mentor_mentorship_hours_per_week: Optional[int] = None
 
     class Config:
         from_attributes = True
@@ -1142,7 +1200,7 @@ class BankAccountType(str, Enum):
 class BankDetailsCreate(BaseModel):
     # UI fields
     account_name: str = Field(..., description="Account holder name")
-    account_email: str = Field(..., description="Account email")
+    account_email: Optional[str] = Field(None, description="Account email")
     business_name: str = Field(..., description="Business name (usually bank name)")
     business_type: str = Field(default="individual", description="Business type (individual, partnership, company)")
     branch_ifsc_code: str = Field(
@@ -1152,6 +1210,8 @@ class BankDetailsCreate(BaseModel):
     )
     account_number: str = Field(..., description="Bank account number")
     beneficiary_name: str = Field(..., description="Name of the account holder/beneficiary")
+    pan_number: str = Field(..., max_length=10, description="PAN number (10 characters)")
+    phone_number: str = Field(..., description="Phone number")
 
 class BankDetailsUpdate(BaseModel):
     account_name: Optional[str] = None
@@ -1161,17 +1221,21 @@ class BankDetailsUpdate(BaseModel):
     branch_ifsc_code: Optional[str] = Field(None, max_length=11)
     account_number: Optional[str] = None
     beneficiary_name: Optional[str] = None
+    pan_number: Optional[str] = Field(None, max_length=10)
+    phone_number: Optional[str] = None
 
 class BankDetailsResponse(BaseModel):
     id: str
     user_id: str
     account_name: str
-    account_email: str
+    account_email: Optional[str] = None
     business_name: str
     business_type: str
     branch_ifsc_code: str
     account_number: str
     beneficiary_name: str
+    pan_number: str
+    phone_number: str
     razorpay_account_id: Optional[str] = None
     razorpay_route_account_id: Optional[str] = None
 
