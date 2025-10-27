@@ -41,7 +41,8 @@ async def submit_questionnaire(
             if current_user.role == "parent":
                 # For parents, questionnaire submission IS their profile completion
                 asyncio.create_task(
-                    email_service.send_parent_onboarding_email(
+                    asyncio.to_thread(
+                        email_service.send_parent_onboarding_email,
                         to_email=current_user.email,
                         user_name=current_user.full_name,
                         ward_name=questionnaire_data.ward_name if hasattr(questionnaire_data, 'ward_name') else None
@@ -51,7 +52,8 @@ async def submit_questionnaire(
             else:
                 # For mentees and mentors, this is just the initial onboarding
                 asyncio.create_task(
-                    email_service.send_onboarding_email(
+                    asyncio.to_thread(
+                        email_service.send_onboarding_email,
                         to_email=current_user.email,
                         user_role=current_user.role,
                         user_name=current_user.full_name

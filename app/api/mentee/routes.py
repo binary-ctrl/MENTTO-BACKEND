@@ -15,6 +15,7 @@ from app.models.models import (
 from app.services.user.services import mentee_service, mentorship_interest_service, user_service, mentor_service
 from app.services.mentorship.mentor_suggestion_service import mentor_suggestion_service
 from app.services.storage.file_upload_service import file_upload_service
+from app.core.database import get_supabase
 
 router = APIRouter(prefix="/mentee", tags=["mentee"])
 
@@ -195,6 +196,67 @@ async def get_accepted_mentorships(current_user = Depends(get_current_user)):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get accepted mentorships: {str(e)}"
+        )
+
+@router.get("/recommendations", response_model=List[dict])
+async def get_mentor_recommendations(
+    current_user = Depends(get_current_mentee_user)
+):
+    """Get list of mentors who are in the same countries that the mentee is considering"""
+    try:
+        # Get mentee details to find their countries of interest
+        mentee_details = await mentee_service.get_mentee_details_by_user_id(current_user.user_id)
+        if not mentee_details:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Mentee details not found. Please complete your profile first."
+            )
+        
+        # Get the countries the mentee is considering
+        mentee_countries = mentee_details.countries_considering if hasattr(mentee_details, 'countries_considering') else []
+        
+        if not mentee_countries or len(mentee_countries) == 0:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="No country information found in mentee profile. Please update your profile to include countries you're considering."
+            )
+        
+        # Get all mentors and filter by countries
+        supabase = get_supabase()
+        result = supabase.table("mentor_details").select(
+            "*, users!mentor_details_user_id_fkey(*)"
+        ).execute()
+        
+        # Filter mentors whose current_residence or study_country matches mentee's countries
+        recommendations = []
+        for mentor in result.data:
+            mentor_residence = mentor.get('current_residence', '')
+            mentor_study_country = mentor.get('study_country', '')
+            
+            # Check if mentor is in any of the countries the mentee is considering
+            if mentor_residence in mentee_countries or mentor_study_country in mentee_countries:
+                user_details = mentor.get('users', {})
+                recommendations.append({
+                    "mentor_id": mentor['user_id'],
+                    "mentor_name": f"{mentor['first_name']} {mentor['last_name']}",
+                    "mentor_email": mentor['email'],
+                    "country": mentor_residence,
+                    "study_country": mentor_study_country,
+                    "university": mentor.get('university_associated', ''),
+                    "course": mentor.get('course_enrolled', ''),
+                    "profile_pic_url": mentor.get('profile_pic_url'),
+                    "brief_introduction": mentor.get('brief_introduction', ''),
+                    "user_details": user_details
+                })
+        
+        return recommendations
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get mentor recommendations: {str(e)}"
         )
 
 

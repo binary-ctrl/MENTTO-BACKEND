@@ -189,12 +189,12 @@ class OfflineAlertService:
                 .logo {{
                     font-size: 24px;
                     font-weight: bold;
-                    color: #007bff;
+                    color: #32898b;
                     margin-bottom: 10px;
                 }}
                 .message-box {{
                     background-color: #f8f9fa;
-                    border-left: 4px solid #007bff;
+                    border-left: 4px solid #32898b;
                     padding: 20px;
                     margin: 20px 0;
                     border-radius: 8px;
@@ -211,7 +211,7 @@ class OfflineAlertService:
                 }}
                 .cta-button {{
                     display: inline-block;
-                    background-color: #007bff;
+                    background-color: #32898b;
                     color: white;
                     padding: 12px 24px;
                     text-decoration: none;
@@ -221,7 +221,7 @@ class OfflineAlertService:
                     text-align: center;
                 }}
                 .cta-button:hover {{
-                    background-color: #0056b3;
+                    background-color: #2a7577;
                 }}
                 .footer {{
                     margin-top: 30px;
@@ -252,7 +252,7 @@ class OfflineAlertService:
                 <div class="footer">
                     <p>This is an automated notification. Please do not reply to this email.</p>
                     <p>If you're having trouble accessing the link, copy and paste this URL into your browser:<br>
-                    <a href="{auth_url}" style="color: #007bff;">{auth_url}</a></p>
+                    <a href="{auth_url}" style="color: #32898b;">{auth_url}</a></p>
                 </div>
             </div>
         </body>

@@ -65,11 +65,10 @@ async def get_all_mentors(
     search: Optional[str] = Query(None, description="Search by name, email, or university"),
     country: Optional[str] = Query(None, description="Filter by study country"),
     university: Optional[str] = Query(None, description="Filter by university"),
-    verification_status: Optional[str] = Query(None, description="Filter by verification status (verified, pending, rejected)"),
     current_user = Depends(get_current_user)
 ):
     """
-    Get all mentors with pagination and optional filtering
+    Get all verified mentors with pagination and optional filtering
     """
     try:
         # Check admin access    
@@ -166,14 +165,9 @@ async def get_all_mentors(
                 print(f"Filtering out mentor without details: {user['user_id']}")
                 continue
                 
-            # Always exclude mentors with pending verification status
-            if mentor_detail.get("verification_status") == "pending":
-                print(f"Filtering out mentor with pending verification status: {user['user_id']}")
-                continue
-                
-            # Apply verification status filter if specified (only for non-admin users)
-            if not is_current_user_admin and verification_status and mentor_detail.get("verification_status") != verification_status:
-                print(f"Filtering out mentor with different verification status: {user['user_id']} (status: {mentor_detail.get('verification_status', 'null')}, filter: {verification_status})")
+            # Only include mentors with verified status
+            if mentor_detail.get("verification_status") != "verified":
+                print(f"Filtering out mentor with non-verified status: {user['user_id']} (status: {mentor_detail.get('verification_status', 'null')})")
                 continue
             
             combined_data = {
@@ -225,7 +219,13 @@ async def get_all_mentors(
             mentor_details = mentor.get("mentor_details")
             
             # Build mentor details response: include ALL columns from mentor_details row if present
-            mentor_details_response = mentor_details if mentor_details else None
+            # but exclude sensitive fields like phone_number and email
+            mentor_details_response = None
+            if mentor_details:
+                mentor_details_response = mentor_details.copy()
+                # Remove sensitive fields
+                mentor_details_response.pop("phone_number", None)
+                mentor_details_response.pop("email", None)
             
             mentor_data = {
                 "mentor_details": mentor_details_response,
@@ -559,6 +559,76 @@ async def get_all_admin_accounts(
             detail=f"Failed to fetch admin accounts: {str(e)}"
         )
 
+# Direct User Creation Endpoint (No Auth Required for Development)
+@router.post("/users/create", response_model=UserResponse)
+async def create_user_directly(
+    user_data: dict
+):
+    """
+    Create a user directly in Supabase without Firebase authentication (Development endpoint)
+    """
+    try:
+        from app.models.models import UserCreate, UserRole
+        from app.services.user.services import user_service
+        import random
+        
+        # Validate required fields
+        required_fields = ["email", "first_name", "last_name", "role"]
+        for field in required_fields:
+            if field not in user_data:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Missing required field: {field}"
+                )
+        
+        # Check if user already exists
+        existing_user = await user_service.get_user_by_email(user_data["email"])
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="User with this email already exists"
+            )
+        
+        # Generate a fake firebase_uid (since we're not using Firebase)
+        fake_firebase_uid = f"admin_created_{random.randint(10**9, 10**10 - 1)}"
+        
+        # Create full name from first and last name
+        full_name = f"{user_data['first_name']} {user_data['last_name']}"
+        
+        # Map role string to UserRole enum
+        role_mapping = {
+            "mentor": UserRole.MENTOR,
+            "mentee": UserRole.MENTEE,
+            "parent": UserRole.PARENT
+        }
+        
+        if user_data["role"] not in role_mapping:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid role. Must be 'mentor', 'mentee', or 'parent'"
+            )
+        
+        # Create user data
+        user_create_data = UserCreate(
+            firebase_uid=fake_firebase_uid,
+            full_name=full_name,
+            email=user_data["email"],
+            role=role_mapping[user_data["role"]]
+        )
+        
+        # Create the user
+        new_user = await user_service.create_user(user_create_data)
+        
+        return new_user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create user: {str(e)}"
+        )
+
 # Mentor Verification Management Endpoints
 @router.put("/mentors/{mentor_id}/verification", response_model=dict)
 async def update_mentor_verification_status(
@@ -585,16 +655,16 @@ async def update_mentor_verification_status(
                     # Get mentor details to send email
                     mentor_details = await mentor_service.get_mentor_details_by_user_id(mentor_id)
                     if mentor_details:
-                        from app.services.email.email_service import email_service
+                        from app.services.email.background_email_service import background_email_service
                         user_name = f"{mentor_details.first_name} {mentor_details.last_name}"
-                        email_result = email_service.send_mentor_verified_email(
+                        email_queued = await background_email_service.queue_mentor_verified_email(
                             to_email=mentor_details.email,
                             user_name=user_name
                         )
-                        if email_result.get('success'):
-                            logger.info(f"Verification email sent to mentor {mentor_details.email}")
+                        if email_queued:
+                            logger.info(f"Verification email queued for mentor {mentor_details.email}")
                         else:
-                            logger.warning(f"Failed to send verification email to mentor {mentor_details.email}: {email_result.get('message')}")
+                            logger.warning(f"Failed to queue verification email for mentor {mentor_details.email}")
                 except Exception as email_error:
                     logger.error(f"Error sending verification email to mentor {mentor_id}: {email_error}")
                     # Don't fail the verification update if email fails
@@ -700,4 +770,209 @@ async def get_pending_verification_mentors(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch pending verification mentors: {str(e)}"
+        )
+
+
+# Email Monitoring Endpoints
+@router.get("/emails/logs", response_model=dict)
+async def get_email_logs(
+    email_type: Optional[str] = Query(None, description="Filter by email type (mentor_verified, mentor_verification, etc.)"),
+    status: Optional[str] = Query(None, description="Filter by status (sent, failed, pending, retrying)"),
+    limit: int = Query(100, ge=1, le=1000, description="Number of logs to return (max 1000)"),
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get email logs for monitoring email delivery (only admins can access this)
+    """
+    try:
+        from app.services.email.reliable_email_service import reliable_email_service
+        
+        logs = await reliable_email_service.get_email_logs(
+            email_type=email_type,
+            status=status,
+            limit=limit
+        )
+        
+        return {
+            "logs": logs,
+            "total": len(logs),
+            "filters": {
+                "email_type": email_type,
+                "status": status,
+                "limit": limit
+            }
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch email logs: {str(e)}"
+        )
+
+
+@router.get("/emails/failed", response_model=dict)
+async def get_failed_emails(
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get all failed emails that can be retried (only admins can access this)
+    """
+    try:
+        from app.services.email.reliable_email_service import reliable_email_service
+        
+        failed_emails = await reliable_email_service.get_failed_emails()
+        
+        return {
+            "failed_emails": failed_emails,
+            "total": len(failed_emails)
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch failed emails: {str(e)}"
+        )
+
+
+@router.post("/emails/{log_id}/retry", response_model=dict)
+async def retry_failed_email(
+    log_id: str,
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Retry a specific failed email (only admins can access this)
+    """
+    try:
+        from app.services.email.reliable_email_service import reliable_email_service
+        
+        result = await reliable_email_service.retry_failed_email(log_id)
+        
+        if result.get('success'):
+            logger.info(f"Admin {current_admin['user_id']} initiated retry for email log {log_id}")
+            return {
+                "success": True,
+                "message": "Email retry initiated successfully",
+                "log_id": log_id
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get('message', 'Failed to retry email')
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retry email: {str(e)}"
+        )
+
+
+@router.get("/emails/stats", response_model=dict)
+async def get_email_stats(
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get email delivery statistics (only admins can access this)
+    """
+    try:
+        from app.services.email.reliable_email_service import reliable_email_service
+        
+        # Get all email logs
+        all_logs = await reliable_email_service.get_email_logs(limit=1000)
+        
+        # Calculate statistics
+        total_emails = len(all_logs)
+        sent_emails = len([log for log in all_logs if log.status == "sent"])
+        failed_emails = len([log for log in all_logs if log.status == "failed"])
+        pending_emails = len([log for log in all_logs if log.status == "pending"])
+        retrying_emails = len([log for log in all_logs if log.status == "retrying"])
+        
+        # Group by email type
+        email_type_stats = {}
+        for log in all_logs:
+            email_type = log.email_type
+            if email_type not in email_type_stats:
+                email_type_stats[email_type] = {"total": 0, "sent": 0, "failed": 0, "pending": 0, "retrying": 0}
+            
+            email_type_stats[email_type]["total"] += 1
+            email_type_stats[email_type][log.status] += 1
+        
+        # Calculate success rate
+        success_rate = (sent_emails / total_emails * 100) if total_emails > 0 else 0
+        
+        return {
+            "overall_stats": {
+                "total_emails": total_emails,
+                "sent_emails": sent_emails,
+                "failed_emails": failed_emails,
+                "pending_emails": pending_emails,
+                "retrying_emails": retrying_emails,
+                "success_rate": round(success_rate, 2)
+            },
+            "email_type_stats": email_type_stats
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch email stats: {str(e)}"
+        )
+
+
+@router.get("/emails/queue/status", response_model=dict)
+async def get_email_queue_status(
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Get background email queue status (only admins can access this)
+    """
+    try:
+        from app.services.email.background_email_service import background_email_service
+        
+        status = await background_email_service.get_queue_status()
+        
+        return {
+            "queue_status": status
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch queue status: {str(e)}"
+        )
+
+
+@router.post("/emails/retry-failed", response_model=dict)
+async def retry_all_failed_emails(
+    current_admin = Depends(get_current_admin)
+):
+    """
+    Retry all failed emails (only admins can access this)
+    """
+    try:
+        from app.services.email.background_email_service import background_email_service
+        
+        result = await background_email_service.retry_failed_emails()
+        
+        if result.get('success'):
+            logger.info(f"Admin {current_admin['user_id']} initiated retry for all failed emails")
+            return {
+                "success": True,
+                "message": "Failed emails retry initiated",
+                "retry_count": result.get('retry_count', 0)
+            }
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=result.get('message', 'Failed to retry emails')
+            )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to retry failed emails: {str(e)}"
         )

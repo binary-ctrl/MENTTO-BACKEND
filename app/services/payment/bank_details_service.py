@@ -36,16 +36,21 @@ class BankDetailsService:
             account_number = bank_data.account_number or str(uuid.uuid4().int)[:10]
 
             # Create bank details record
+            # Handle empty email - use a placeholder or None if required
+            account_email = bank_data.account_email if bank_data.account_email else None
+            
             bank_record = {
                 "id": str(uuid.uuid4()),
                 "user_id": user_id,
                 "account_name": bank_data.account_name,
-                "account_email": bank_data.account_email,
+                "account_email": account_email,
                 "business_name": bank_data.business_name,
                 "business_type": bank_data.business_type,
                 "branch_ifsc_code": bank_data.branch_ifsc_code.upper(),
                 "account_number": account_number,
                 "beneficiary_name": bank_data.beneficiary_name,
+                "pan_number": bank_data.pan_number.upper(),
+                "phone_number": bank_data.phone_number,
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
             }
@@ -116,6 +121,10 @@ class BankDetailsService:
                 update_data["account_number"] = bank_data.account_number
             if bank_data.beneficiary_name is not None:
                 update_data["beneficiary_name"] = bank_data.beneficiary_name
+            if bank_data.pan_number is not None:
+                update_data["pan_number"] = bank_data.pan_number.upper()
+            if bank_data.phone_number is not None:
+                update_data["phone_number"] = bank_data.phone_number
 
             if not update_data:
                 raise HTTPException(

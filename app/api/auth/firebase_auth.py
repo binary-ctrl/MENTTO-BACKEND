@@ -161,13 +161,14 @@ async def find_or_create_user(firebase_user: FirebaseUserInfo, role: str = "", d
     
     if existing_user:
         # User exists, return existing user data
-        user_data = existing_user[0]
-        print(f"DEBUG: Found existing user: {user_data}")
-        
-        # Serialize any datetime objects in the user data
-        serialized_user_data = {}
-        for key, value in user_data.items():
-            serialized_user_data[key] = serialize_datetime(value)
+        # existing_user is a UserResponse object, access its attributes directly
+        serialized_user_data = {
+            "user_id": existing_user.user_id,
+            "email": existing_user.email,
+            "full_name": existing_user.full_name,
+            "role": existing_user.role
+        }
+        print(f"DEBUG: Found existing user: {serialized_user_data}")
         
         # Backfill full_name if requested
         if do_backfill:
