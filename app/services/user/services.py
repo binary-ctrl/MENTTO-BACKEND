@@ -303,6 +303,10 @@ class MenteeService:
             how_mentto_help=data.get("how_mentto_help", []),
             how_found_mentto=data.get("how_found_mentto"),
             community_referral=data.get("community_referral"),
+            graduation_university=data.get("graduation_university"),
+            graduation_month_year=data.get("graduation_month_year"),
+            undergraduate_major=data.get("undergraduate_major"),
+            undergraduate_final_grade=data.get("undergraduate_final_grade"),
             created_at=self._parse_datetime(data["created_at"]),
             updated_at=self._parse_datetime(data["updated_at"])
         )
@@ -639,6 +643,7 @@ class MentorService:
             phone_number=data["phone_number"],
             email=data["email"],
             profile_pic_url=data.get("profile_pic_url"),
+            linkedin=data.get("linkedin"),
             currency=data.get("currency") or "INR",  # Handle None values
             study_country=data["study_country"],
             university_associated=data["university_associated"],
@@ -650,8 +655,10 @@ class MentorService:
             current_residence=data["current_residence"],
             taken_standardized_tests=data.get("taken_standardized_tests"),
             standardized_tests_taken=data.get("standardized_tests_taken", []),
+            test_scores=data.get("test_scores"),
             taken_english_tests=data.get("taken_english_tests"),
             english_tests_taken=data.get("english_tests_taken", []),
+            english_test_scores=data.get("english_test_scores"),
             self_application=data.get("self_application"),
             education_funding=(data.get("education_funding") or []),
             other_universities_admitted=data.get("other_universities_admitted", []),
@@ -739,8 +746,8 @@ class MentorshipInterestService:
                 # Get mentee details from mentee_details table
                 mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
                 
-                # Get mentor details from mentor_details table
-                mentor_details_result = self.supabase.table("mentor_details").select("first_name, last_name, phone_number, email, study_country, university_associated, graduation_date, university_relationship, education_level, course_enrolled, current_grade, current_residence, work_experience_years, current_status, current_designation, industries_worked, companies_worked, hobbies, self_description, how_can_help, mentorship_fee, currency, previous_mentoring_experience, brief_introduction, mentorship_hours_per_week").eq("user_id", data["mentor_id"]).execute()
+                # Get mentor details from mentor_details table (including profile_pic_url)
+                mentor_details_result = self.supabase.table("mentor_details").select("first_name, last_name, phone_number, email, profile_pic_url, study_country, university_associated, graduation_date, university_relationship, education_level, course_enrolled, current_grade, current_residence, work_experience_years, current_status, current_designation, industries_worked, companies_worked, hobbies, self_description, how_can_help, mentorship_fee, currency, previous_mentoring_experience, brief_introduction, mentorship_hours_per_week").eq("user_id", data["mentor_id"]).execute()
                 
                 # Add user details to interest data
                 if mentee_result.data:
@@ -780,6 +787,7 @@ class MentorshipInterestService:
                             "first_name": mentor_details.get("first_name"),
                             "last_name": mentor_details.get("last_name"),
                             "phone_number": mentor_details.get("phone_number"),
+                            "profile_pic_url": mentor_details.get("profile_pic_url"),
                             "study_country": mentor_details.get("study_country"),
                             "university_associated": mentor_details.get("university_associated"),
                             "graduation_date": mentor_details.get("graduation_date"),
@@ -826,8 +834,8 @@ class MentorshipInterestService:
                 # Get mentee details from mentee_details table
                 mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
                 
-                # Get mentor details from mentor_details table
-                mentor_details_result = self.supabase.table("mentor_details").select("first_name, last_name, phone_number, email, study_country, university_associated, graduation_date, university_relationship, education_level, course_enrolled, current_grade, current_residence, work_experience_years, current_status, current_designation, industries_worked, companies_worked, hobbies, self_description, how_can_help, mentorship_fee, currency, previous_mentoring_experience, brief_introduction, mentorship_hours_per_week").eq("user_id", data["mentor_id"]).execute()
+                # Get mentor details from mentor_details table (including profile_pic_url)
+                mentor_details_result = self.supabase.table("mentor_details").select("first_name, last_name, phone_number, email, profile_pic_url, study_country, university_associated, graduation_date, university_relationship, education_level, course_enrolled, current_grade, current_residence, work_experience_years, current_status, current_designation, industries_worked, companies_worked, hobbies, self_description, how_can_help, mentorship_fee, currency, previous_mentoring_experience, brief_introduction, mentorship_hours_per_week").eq("user_id", data["mentor_id"]).execute()
                 
                 # Add user details to interest data
                 if mentee_result.data:
@@ -867,6 +875,7 @@ class MentorshipInterestService:
                             "first_name": mentor_details.get("first_name"),
                             "last_name": mentor_details.get("last_name"),
                             "phone_number": mentor_details.get("phone_number"),
+                            "profile_pic_url": mentor_details.get("profile_pic_url"),
                             "study_country": mentor_details.get("study_country"),
                             "university_associated": mentor_details.get("university_associated"),
                             "graduation_date": mentor_details.get("graduation_date"),
@@ -1208,7 +1217,8 @@ class MentorshipInterestService:
             mentor_currency=data.get("mentor", {}).get("currency") if data.get("mentor") else None,
             mentor_previous_mentoring_experience=data.get("mentor", {}).get("previous_mentoring_experience") if data.get("mentor") else None,
             mentor_brief_introduction=data.get("mentor", {}).get("brief_introduction") if data.get("mentor") else None,
-            mentor_mentorship_hours_per_week=data.get("mentor", {}).get("mentorship_hours_per_week") if data.get("mentor") else None
+            mentor_mentorship_hours_per_week=data.get("mentor", {}).get("mentorship_hours_per_week") if data.get("mentor") else None,
+            mentor_profile_pic_url=data.get("mentor", {}).get("profile_pic_url") if data.get("mentor") else None
         )
 
 

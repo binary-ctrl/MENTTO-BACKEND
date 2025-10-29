@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   mento-backend:
-    image: vikaskamwal/mento-backend:test
+    image: vikaskamwal/mento-backend:latest
     container_name: mento-backend
     restart: unless-stopped
     ports:

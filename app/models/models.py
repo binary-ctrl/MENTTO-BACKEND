@@ -73,6 +73,11 @@ class MenteeDetailsBase(BaseModel):
     how_mentto_help: List[str] = []
     how_found_mentto: Optional[str] = None
     community_referral: Optional[bool] = None
+    # Undergraduate education details
+    graduation_university: Optional[str] = None
+    graduation_month_year: Optional[str] = None  # e.g., "June 2023"
+    undergraduate_major: Optional[str] = None
+    undergraduate_final_grade: Optional[str] = None
 
 
 class MenteeDetailsCreate(MenteeDetailsBase):
@@ -119,6 +124,11 @@ class MenteeDetailsUpdate(BaseModel):
     how_mentto_help: Optional[List[str]] = None
     how_found_mentto: Optional[str] = None
     community_referral: Optional[bool] = None
+    # Undergraduate education details (updates)
+    graduation_university: Optional[str] = None
+    graduation_month_year: Optional[str] = None
+    undergraduate_major: Optional[str] = None
+    undergraduate_final_grade: Optional[str] = None
 
 
 class MenteeDetailsResponse(MenteeDetailsBase):
@@ -137,6 +147,7 @@ class MentorDetailsBase(BaseModel):
     phone_number: str
     email: EmailStr
     profile_pic_url: Optional[str] = None
+    linkedin: Optional[str] = None
     study_country: str
     university_associated: str
     graduation_date: Optional[str] = None
@@ -147,8 +158,10 @@ class MentorDetailsBase(BaseModel):
     current_residence: str
     taken_standardized_tests: Optional[bool] = None
     standardized_tests_taken: List[str] = []
+    test_scores: Optional[Dict[str, Any]] = None
     taken_english_tests: Optional[bool] = None
     english_tests_taken: List[str] = []
+    english_test_scores: Optional[Dict[str, Any]] = None
     self_application: Optional[bool] = None
     education_funding: List[str]
     other_universities_admitted: List[str] = []
@@ -176,6 +189,7 @@ class MentorDetailsUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = None
+    linkedin: Optional[str] = None
     study_country: Optional[str] = None
     university_associated: Optional[str] = None
     graduation_date: Optional[str] = None
@@ -186,8 +200,10 @@ class MentorDetailsUpdate(BaseModel):
     current_residence: Optional[str] = None
     taken_standardized_tests: Optional[bool] = None
     standardized_tests_taken: Optional[List[str]] = None
+    test_scores: Optional[Dict[str, Any]] = None
     taken_english_tests: Optional[bool] = None
     english_tests_taken: Optional[List[str]] = None
+    english_test_scores: Optional[Dict[str, Any]] = None
     self_application: Optional[bool] = None
     education_funding: Optional[List[str]] = None
     other_universities_admitted: Optional[List[str]] = None
@@ -348,6 +364,8 @@ class MentorshipInterestResponse(BaseModel):
     mentor_previous_mentoring_experience: Optional[bool] = None
     mentor_brief_introduction: Optional[str] = None
     mentor_mentorship_hours_per_week: Optional[int] = None
+    # Additional media
+    mentor_profile_pic_url: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -879,6 +897,12 @@ class QuestionnaireDetailsBase(BaseModel):
     
     # Step 20: How found Mentto
     how_found_mentto: Optional[str] = None
+    
+    # Ward's Undergraduate Education Details
+    graduation_university: Optional[str] = None
+    graduation_month_year: Optional[str] = None  # e.g., "June 2023"
+    undergraduate_major: Optional[str] = None
+    undergraduate_final_grade: Optional[str] = None
 
 
 class QuestionnaireDetailsCreate(QuestionnaireDetailsBase):
@@ -948,6 +972,12 @@ class QuestionnaireDetailsUpdate(BaseModel):
     
     # Step 20: How found Mentto
     how_found_mentto: Optional[str] = None
+    
+    # Ward's Undergraduate Education Details (updates)
+    graduation_university: Optional[str] = None
+    graduation_month_year: Optional[str] = None
+    undergraduate_major: Optional[str] = None
+    undergraduate_final_grade: Optional[str] = None
 
 
 class QuestionnaireDetailsResponse(QuestionnaireDetailsBase):
