@@ -189,6 +189,7 @@ class MentorDetailsUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone_number: Optional[str] = None
+    profile_pic_url: Optional[str] = None
     linkedin: Optional[str] = None
     study_country: Optional[str] = None
     university_associated: Optional[str] = None

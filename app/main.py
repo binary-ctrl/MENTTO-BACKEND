@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 
 from app.core.config import settings
 from app.models.models import SuccessResponse, ErrorResponse
+from app.services.email.background_email_service import background_email_service
 from app.api.auth.routes import router as auth_router
 from app.api.auth.firebase_auth import router as firebase_auth_router
 from app.api.auth.mfa_routes import router as mfa_router
@@ -35,8 +36,20 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Application lifespan events"""
     logger.info("Starting Mentto Backend API")
+    # Start background email processor so queued emails are delivered
+    try:
+        await background_email_service.start_background_processor()
+        logger.info("Background email processor started")
+    except Exception as e:
+        logger.error(f"Failed to start background email processor: {e}")
     yield
     logger.info("Shutting down Mentto Backend API")
+    # Stop background email processor
+    try:
+        await background_email_service.stop_background_processor()
+        logger.info("Background email processor stopped")
+    except Exception as e:
+        logger.error(f"Failed to stop background email processor: {e}")
 
 # Create FastAPI app
 app = FastAPI(

@@ -1,9 +1,12 @@
 import uuid
 import os
+import logging
 from typing import Optional
 from fastapi import HTTPException, status, UploadFile
 from app.core.config import settings
 from app.core.database import get_supabase_admin
+
+logger = logging.getLogger(__name__)
 
 
 class FileUploadService:
@@ -30,19 +33,28 @@ class FileUploadService:
             # Upload to Supabase Storage
             upload_path = f"profile_pictures/{unique_filename}"
             
+            logger.info(f"Uploading file to bucket '{settings.storage_bucket_name}' at path '{upload_path}'")
+            logger.info(f"File size: {len(file_content)} bytes, Content type: {file.content_type}")
+            
+            # Upload to Supabase Storage
             result = self.supabase.storage.from_(settings.storage_bucket_name).upload(
                 path=upload_path,
                 file=file_content,
                 file_options={
                     "content-type": file.content_type,
-                    "cache-control": "3600"
+                    "cache-control": "3600",
+                    "upsert": "true"  # Replace if exists
                 }
             )
+            
+            logger.info(f"Upload result type: {type(result)}, result: {result}")
 
             # Handle response for supabase-py which may return httpx.Response or dict
+            upload_success = False
             if hasattr(result, "status_code"):
                 # Likely an httpx.Response
-                if int(getattr(result, "status_code", 500)) >= 400:
+                status_code = int(getattr(result, "status_code", 500))
+                if status_code >= 400:
                     try:
                         error_payload = result.json()
                     except Exception:
@@ -51,6 +63,8 @@ class FileUploadService:
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail=f"Failed to upload file: {error_payload}"
                     )
+                elif status_code in [200, 201]:
+                    upload_success = True
             elif isinstance(result, dict):
                 error_value = result.get("error") or result.get("Error")
                 if error_value:
@@ -58,11 +72,32 @@ class FileUploadService:
                         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                         detail=f"Failed to upload file: {error_value}"
                     )
+                else:
+                    upload_success = True
+            else:
+                # Unknown response type, assume success if no exception
+                upload_success = True
+            
+            if not upload_success:
+                logger.error(f"File upload failed. Result: {result}")
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="File upload did not succeed. Please check storage configuration and bucket permissions."
+                )
+            
+            logger.info(f"File upload successful. Path: {upload_path}")
             
             # Get public URL
-            public_url_result = self.supabase.storage.from_(settings.storage_bucket_name).get_public_url(upload_path)
+            try:
+                public_url_result = self.supabase.storage.from_(settings.storage_bucket_name).get_public_url(upload_path)
+                logger.info(f"Public URL result type: {type(public_url_result)}, result: {public_url_result}")
+            except Exception as url_error:
+                logger.error(f"Error getting public URL: {url_error}")
+                # Fallback to manual construction
+                public_url_result = None
 
             # Support both string and dict shapes
+            public_url = None
             if isinstance(public_url_result, str):
                 public_url = public_url_result
             elif isinstance(public_url_result, dict):
@@ -71,12 +106,12 @@ class FileUploadService:
                     (data_section.get("publicUrl") if isinstance(data_section, dict) else None)
                     or data_section.get("public_url") if isinstance(data_section, dict) else None
                 )
-                if not public_url:
-                    # Fallback: try to construct manually
-                    public_url = f"{settings.supabase_url}/storage/v1/object/public/{settings.storage_bucket_name}/{upload_path}"
-            else:
-                # Unknown type, fallback to constructed URL
+            
+            # Fallback: construct manually if API didn't return URL
+            if not public_url:
                 public_url = f"{settings.supabase_url}/storage/v1/object/public/{settings.storage_bucket_name}/{upload_path}"
+            
+            logger.info(f"Final public URL: {public_url}")
             
             return public_url
             
