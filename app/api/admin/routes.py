@@ -1,7 +1,9 @@
 """
 Admin API routes for managing mentors and users
 """
-from typing import List, Optional
+import json
+from typing import Any, List, Optional
+from urllib.parse import unquote_plus
 from fastapi import APIRouter, HTTPException, Depends, status, Query
 from fastapi.responses import JSONResponse
 import logging
@@ -58,6 +60,28 @@ class PaginatedResponse:
             }
         }
 
+
+def normalize_query_value(value: Optional[str]) -> Optional[str]:
+    """
+    Normalize incoming query parameters to avoid case or whitespace mismatch.
+    Uses unquote_plus to treat '+' as space (common URL encoding behavior).
+    """
+    if value is None:
+        return None
+    decoded_value = unquote_plus(value)
+    normalized = decoded_value.strip().lower()
+    return normalized or None
+
+
+def normalize_record_value(value: Any) -> Optional[str]:
+    """
+    Normalize string values sourced from the database for comparison.
+    """
+    if not isinstance(value, str):
+        return None
+    normalized = value.strip().lower()
+    return normalized or None
+
 @router.get("/mentors")
 async def get_all_mentors(
     page: int = Query(1, ge=1, description="Page number (starts from 1)"),
@@ -65,6 +89,8 @@ async def get_all_mentors(
     search: Optional[str] = Query(None, description="Search by name, email, or university"),
     country: Optional[str] = Query(None, description="Filter by study country"),
     university: Optional[str] = Query(None, description="Filter by university"),
+    education_level: Optional[str] = Query(None, description="Filter by education level"),
+    industry: Optional[str] = Query(None, description="Filter by industry experience"),
     current_user = Depends(get_current_user)
 ):
     """
@@ -182,29 +208,63 @@ async def get_all_mentors(
             all_mentors.append(combined_data)
         
         # Apply filters
-        if country:
+        normalized_country = normalize_query_value(country)
+        normalized_university = normalize_query_value(university)
+        normalized_education_level = normalize_query_value(education_level)
+        normalized_industry = normalize_query_value(industry)
+
+        if normalized_country:
             all_mentors = [
                 mentor for mentor in all_mentors
-                if mentor.get("mentor_details") and mentor["mentor_details"].get("study_country") == country
+                if mentor.get("mentor_details")
+                and normalize_record_value(mentor["mentor_details"].get("study_country")) == normalized_country
             ]
             
-        if university:
+        if normalized_university:
             all_mentors = [
                 mentor for mentor in all_mentors
-                if mentor.get("mentor_details") and university.lower() in mentor["mentor_details"].get("university_associated", "").lower()
+                if mentor.get("mentor_details")
+                and normalized_university in (normalize_record_value(mentor["mentor_details"].get("university_associated")) or "")
+            ]
+
+        if normalized_education_level:
+            all_mentors = [
+                mentor for mentor in all_mentors
+                if mentor.get("mentor_details")
+                and normalize_record_value(mentor["mentor_details"].get("education_level")) == normalized_education_level
+            ]
+
+        if normalized_industry:
+
+            def has_matching_industry(mentor_detail):
+                industries = mentor_detail.get("industries_worked")
+                if isinstance(industries, list):
+                    return any(
+                        (normalized_value := normalize_record_value(item)) and normalized_industry in normalized_value
+                        for item in industries
+                        if item
+                    )
+                if isinstance(industries, str):
+                    normalized_value = normalize_record_value(industries)
+                    return bool(normalized_value and normalized_industry in normalized_value)
+                return False
+
+            all_mentors = [
+                mentor for mentor in all_mentors
+                if mentor.get("mentor_details") and has_matching_industry(mentor["mentor_details"])
             ]
         
         # Apply search filter in Python
-        if search:
-            search_lower = search.lower()
+        normalized_search = normalize_query_value(search)
+        if normalized_search:
             all_mentors = [
                 mentor for mentor in all_mentors
-                if (search_lower in mentor.get("full_name", "").lower() or
-                    search_lower in mentor.get("email", "").lower() or
+                if (normalized_search in (normalize_record_value(mentor.get("full_name")) or "") or
+                    normalized_search in (normalize_record_value(mentor.get("email")) or "") or
                     (mentor.get("mentor_details") and (
-                        search_lower in mentor["mentor_details"].get("first_name", "").lower() or
-                        search_lower in mentor["mentor_details"].get("last_name", "").lower() or
-                        search_lower in mentor["mentor_details"].get("university_associated", "").lower()
+                        normalized_search in (normalize_record_value(mentor["mentor_details"].get("first_name")) or "") or
+                        normalized_search in (normalize_record_value(mentor["mentor_details"].get("last_name")) or "") or
+                        normalized_search in (normalize_record_value(mentor["mentor_details"].get("university_associated")) or "")
                     )))
             ]
         
@@ -259,6 +319,85 @@ async def get_all_mentors(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to fetch mentors: {str(e)}"
         )
+
+
+@router.get("/mentors/filter-options", response_model=dict)
+async def get_mentor_filter_options(
+    current_user = Depends(get_current_user)
+):
+    """
+    Get unique filter values (country, education level, industries) from mentor onboarding data.
+    """
+    try:
+        check_admin_access(current_user)
+
+        supabase = get_supabase()
+        result = supabase.table("mentor_details").select("study_country, education_level, industries_worked").execute()
+        mentor_records = result.data or []
+
+        unique_countries = set()
+        unique_education_levels = set()
+        unique_industries = set()
+
+        def add_unique_value(target_set, raw_value):
+            normalized = normalize_record_value(raw_value)
+            if normalized:
+                target_set.add(normalized)
+
+        def collect_industries(value):
+            if not value:
+                return
+
+            if isinstance(value, list):
+                for item in value:
+                    add_unique_value(unique_industries, item)
+                return
+
+            if isinstance(value, str):
+                stripped_value = value.strip()
+                if not stripped_value:
+                    return
+
+                parsed_value = None
+                if stripped_value.startswith("[") and stripped_value.endswith("]"):
+                    try:
+                        parsed_value = json.loads(stripped_value)
+                    except (json.JSONDecodeError, TypeError):
+                        parsed_value = None
+
+                if isinstance(parsed_value, list):
+                    for item in parsed_value:
+                        add_unique_value(unique_industries, item)
+                    return
+
+                if "," in stripped_value:
+                    for segment in stripped_value.split(","):
+                        add_unique_value(unique_industries, segment)
+                    return
+
+                add_unique_value(unique_industries, stripped_value)
+
+        for mentor in mentor_records:
+            add_unique_value(unique_countries, mentor.get("study_country"))
+            add_unique_value(unique_education_levels, mentor.get("education_level"))
+            collect_industries(mentor.get("industries_worked"))
+
+        return {
+            "countries": sorted(unique_countries),
+            "education_levels": sorted(unique_education_levels),
+            "industries": sorted(unique_industries)
+        }
+
+    except Exception as e:
+        import traceback
+        error_details = traceback.format_exc()
+        print(f"Error in get_mentor_filter_options: {str(e)}")
+        print(f"Traceback: {error_details}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch mentor filter options: {str(e)}"
+        )
+
 
 @router.get("/mentors/all", response_model=dict)
 async def get_all_mentors_for_admin(
