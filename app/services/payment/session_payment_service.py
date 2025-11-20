@@ -79,6 +79,7 @@ class SessionPaymentService:
                 "status": "scheduled",
                 "call_type": "video_call",
                 "timezone": "UTC",
+                "payment_status": "pending",  # Set payment status to pending when session is created
                 "created_at": datetime.utcnow().isoformat(),
                 "updated_at": datetime.utcnow().isoformat()
             }
@@ -237,8 +238,14 @@ class SessionPaymentService:
                 "id", payment["id"]
             ).execute()
 
-            # Update session status to confirmed
+            # Update session status to confirmed and payment_status to success
             await self._update_session_status(payment["session_id"], "confirmed")
+            
+            # Update session payment_status to success
+            self.supabase.table("sessions").update({
+                "payment_status": "success",
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", payment["session_id"]).execute()
 
             # Generate meeting link and send calendar invites
             await self._send_session_calendar_invites(payment["session_id"])

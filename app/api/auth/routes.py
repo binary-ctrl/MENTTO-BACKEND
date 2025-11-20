@@ -12,10 +12,10 @@ from app.core.config import settings
 from app.core.security.firebase_auth import verify_firebase_token
 from app.core.security.jwt_auth import create_user_token
 from app.core.security.auth_dependencies import get_current_user
-from app.utils.url_utils import format_dashboard_url
+from app.utils.url_utils import format_dashboard_url, format_auth_url
 from app.models.models import (
     FirebaseTokenRequest, TokenResponse, UserResponse,
-    EmailPasswordSignupRequest, EmailPasswordLoginRequest
+    EmailPasswordSignupRequest, EmailPasswordLoginRequest, ForgotPasswordRequest
 )
 from app.services.user.services import user_service
 
@@ -250,6 +250,82 @@ async def email_password_signup(payload: EmailPasswordSignupRequest):
         firebase_uid=firebase_uid,
     )
     return TokenResponse(access_token=token, user=app_user)
+
+@router.post("/forgot-password")
+async def forgot_password(request_data: ForgotPasswordRequest):
+    """Handle forgot password request using Firebase REST API"""
+    try:
+        # Use Firebase REST API to send password reset email
+        firebase_api_key = settings.firebase_api_key
+        if not firebase_api_key:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Firebase API key not configured"
+            )
+
+        # Firebase Identity Toolkit API endpoint for sending password reset email
+        firebase_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={firebase_api_key}"
+        
+        # Set continue URL for redirect after password reset
+        # Use provided continueUrl or default to frontend_url + /auth
+        continue_url = request_data.continueUrl or format_auth_url()
+        
+        payload = {
+            "requestType": "PASSWORD_RESET",
+            "email": request_data.email,
+            "continueUrl": continue_url
+        }
+        
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(firebase_url, json=payload)
+            
+            if response.status_code == 200:
+                # Firebase successfully sent the password reset email
+                return {
+                    "success": True,
+                    "message": "Password reset email sent successfully. Please check your inbox.",
+                    "email": request_data.email
+                }
+            else:
+                # Parse Firebase error response
+                try:
+                    error_data = response.json()
+                    error_message = error_data.get("error", {}).get("message", "Unknown error")
+                    
+                    # Handle specific Firebase errors
+                    if "EMAIL_NOT_FOUND" in error_message:
+                        # For security, don't reveal if email exists or not
+                        # Return success message anyway to prevent email enumeration
+                        return {
+                            "success": True,
+                            "message": "If an account with this email exists, a password reset email has been sent.",
+                            "email": request_data.email
+                        }
+                    elif "TOO_MANY_ATTEMPTS_TRY_LATER" in error_message:
+                        raise HTTPException(
+                            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                            detail="Too many password reset attempts. Please try again later."
+                        )
+                    else:
+                        raise HTTPException(
+                            status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"Failed to send password reset email: {error_message}"
+                        )
+                except ValueError:
+                    # If response is not JSON, use the raw text
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail=f"Firebase password reset failed: {response.text}"
+                    )
+                    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password reset error: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Password reset error: {str(e)}"
+        )
 
 @router.post("/verify", response_model=TokenResponse)
 async def verify_token_endpoint(request: FirebaseTokenRequest):

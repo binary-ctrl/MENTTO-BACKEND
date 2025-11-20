@@ -168,6 +168,12 @@ async def get_all_sessions_divided(
         past_sessions = []
         
         for session in all_sessions:
+            # Filter out sessions where payment_status is "pending"
+            # Only show sessions where payment has been completed (success or failed)
+            if session.payment_status == "pending":
+                logger.info(f"Skipping session {session.id} - payment_status is pending")
+                continue
+            
             # Parse session date and time
             session_date = datetime.strptime(session.scheduled_date, "%Y-%m-%d").date()
             

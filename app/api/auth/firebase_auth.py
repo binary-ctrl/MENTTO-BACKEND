@@ -23,6 +23,7 @@ from app.core.security import create_access_token, get_user_id_from_token
 from app.core.database import get_supabase
 from app.services.user.services import user_service
 from app.services.auth.mfa_service import mfa_service
+from app.utils.url_utils import format_auth_url
 # from app.profile.service import ensure_minimal_profile  # Commented out - module doesn't exist
 # from app.utils.email_utils import send_welcome_email  # Commented out - module doesn't exist
 # from app.utils.klaviyo import get_klaviyo_client  # Commented out - module doesn't exist
@@ -440,12 +441,83 @@ async def get_firebase_config():
 
 @router.post("/forgot-password")
 async def forgot_password(request: Request):
-    """Handle forgot password request - Firebase handles this automatically"""
-    return {
-        "success": True,
-        "message": "Use Firebase Auth SDK for password reset",
-        "note": "Firebase handles forgot password automatically - no backend action needed"
-    }
+    """Handle forgot password request using Firebase REST API"""
+    try:
+        validate_firebase_config()
+        
+        body = await request.json()
+        email = body.get("email")
+        
+        if not email:
+            raise HTTPException(
+                status_code=400,
+                detail="Email is required"
+            )
+        
+        # Use Firebase REST API to send password reset email
+        # Firebase Identity Toolkit API endpoint for sending password reset email
+        firebase_url = f"https://identitytoolkit.googleapis.com/v1/accounts:sendOobCode?key={FIREBASE_API_KEY}"
+        
+        # Set continue URL for redirect after password reset
+        # Default to frontend_url + /auth, or use the continueUrl from request if provided
+        continue_url = body.get("continueUrl") or format_auth_url()
+        
+        payload = {
+            "requestType": "PASSWORD_RESET",
+            "email": email,
+            "continueUrl": continue_url
+        }
+        
+        async with httpx.AsyncClient(timeout=20) as client:
+            response = await client.post(firebase_url, json=payload)
+            
+            if response.status_code == 200:
+                # Firebase successfully sent the password reset email
+                return {
+                    "success": True,
+                    "message": "Password reset email sent successfully. Please check your inbox.",
+                    "email": email
+                }
+            else:
+                # Parse Firebase error response
+                try:
+                    error_data = response.json()
+                    error_message = error_data.get("error", {}).get("message", "Unknown error")
+                    
+                    # Handle specific Firebase errors
+                    if "EMAIL_NOT_FOUND" in error_message:
+                        # For security, don't reveal if email exists or not
+                        # Return success message anyway
+                        return {
+                            "success": True,
+                            "message": "If an account with this email exists, a password reset email has been sent.",
+                            "email": email
+                        }
+                    elif "TOO_MANY_ATTEMPTS_TRY_LATER" in error_message:
+                        raise HTTPException(
+                            status_code=429,
+                            detail="Too many password reset attempts. Please try again later."
+                        )
+                    else:
+                        raise HTTPException(
+                            status_code=400,
+                            detail=f"Failed to send password reset email: {error_message}"
+                        )
+                except ValueError:
+                    # If response is not JSON, use the raw text
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"Firebase password reset failed: {response.text}"
+                    )
+                    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Password reset error: {str(e)}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Password reset error: {str(e)}"
+        )
 
 @router.post("/signup")
 async def firebase_signup(request: Request):

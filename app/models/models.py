@@ -450,6 +450,11 @@ class EmailPasswordLoginRequest(BaseModel):
     password: str
 
 
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+    continueUrl: Optional[str] = None  # Optional redirect URL after password reset
+
+
 # Google Calendar Models
 class CalendarEventCreate(BaseModel):
     title: str
@@ -800,7 +805,7 @@ class SessionResponse(BaseModel):
     payment_id: Optional[str] = None
     payment_amount: Optional[float] = None
     payment_currency: Optional[str] = None
-    payment_status: Optional[str] = None
+    payment_status: Optional[str] = "pending"  # pending, success, failed
     razorpay_order_id: Optional[str] = None
     razorpay_payment_id: Optional[str] = None
     

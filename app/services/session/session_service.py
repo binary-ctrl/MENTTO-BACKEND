@@ -103,6 +103,12 @@ class SessionService:
                 session_data["mentor_name"] = mentor_result.data[0]["full_name"]
                 session_data["mentor_email"] = mentor_result.data[0]["email"]
             
+            # Preserve payment_status from sessions table (primary source)
+            # This is what we update when payment is verified
+            # If not present, default to "pending"
+            if "payment_status" not in session_data or session_data.get("payment_status") is None:
+                session_data["payment_status"] = "pending"
+            
             # Get payment data from session_payments table
             payment_result = self.supabase.table("session_payments").select("*").eq("session_id", session_id).execute()
             if payment_result.data:
@@ -110,7 +116,8 @@ class SessionService:
                 session_data["payment_id"] = payment_data.get("id")
                 session_data["payment_amount"] = payment_data.get("amount")
                 session_data["payment_currency"] = payment_data.get("currency")
-                session_data["payment_status"] = payment_data.get("status")
+                # Keep payment_status from sessions table - don't overwrite with session_payments status
+                # The sessions.payment_status is the source of truth
                 session_data["razorpay_order_id"] = payment_data.get("razorpay_order_id")
                 session_data["razorpay_payment_id"] = payment_data.get("razorpay_payment_id")
             
@@ -393,6 +400,12 @@ class SessionService:
         try:
             session_id = session_data["id"]
             
+            # Preserve payment_status from sessions table (primary source)
+            # This is what we update when payment is verified
+            # If not present, default to "pending"
+            if "payment_status" not in session_data or session_data.get("payment_status") is None:
+                session_data["payment_status"] = "pending"
+            
             # Get payment data from session_payments table
             payment_result = self.supabase.table("session_payments").select("*").eq("session_id", session_id).execute()
             if payment_result.data:
@@ -400,7 +413,8 @@ class SessionService:
                 session_data["payment_id"] = payment_data.get("id")
                 session_data["payment_amount"] = payment_data.get("amount")
                 session_data["payment_currency"] = payment_data.get("currency")
-                session_data["payment_status"] = payment_data.get("status")
+                # Keep payment_status from sessions table - don't overwrite with session_payments status
+                # The sessions.payment_status is the source of truth
                 session_data["razorpay_order_id"] = payment_data.get("razorpay_order_id")
                 session_data["razorpay_payment_id"] = payment_data.get("razorpay_payment_id")
             
@@ -479,7 +493,7 @@ class SessionService:
                     payment_id=session_data.get("payment_id"),
                     payment_amount=session_data.get("payment_amount"),
                     payment_currency=session_data.get("payment_currency"),
-                    payment_status=session_data.get("payment_status"),
+                    payment_status=session_data.get("payment_status") or "pending",  # Default to pending if not set
                     razorpay_order_id=session_data.get("razorpay_order_id"),
                     razorpay_payment_id=session_data.get("razorpay_payment_id"),
                     # Scheduled calls information

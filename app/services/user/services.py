@@ -455,14 +455,23 @@ class MentorService:
                 unique_mentees.add(interest["mentee_id"])
             total_mentees = len(unique_mentees)
             
-            # Get total sessions
-            sessions_result = self.supabase.table("sessions").select("id").eq("mentor_id", mentor_id).execute()
-            total_sessions = len(sessions_result.data)
+            # Get total sessions and calculate total earnings from actual amounts
+            # Only count sessions where payment_status is not "pending" (exclude null and "pending")
+            # Use .in_() to explicitly include only "success" and "failed" statuses
+            sessions_result = self.supabase.table("sessions").select("id, amount, payment_status").eq("mentor_id", mentor_id).in_("payment_status", ["success", "failed"]).execute()
             
-            # Calculate total earnings (total_sessions * hourly_rate)
+            # Also handle any other non-pending statuses that might exist
+            valid_sessions = [s for s in sessions_result.data if s.get("payment_status") and s.get("payment_status") != "pending"]
+            total_sessions = len(valid_sessions)
+            
+            # Calculate total earnings by summing actual amounts from sessions table
             total_earnings = 0.0
-            if hourly_rate and total_sessions > 0:
-                total_earnings = total_sessions * hourly_rate
+            if valid_sessions:
+                # Sum all amounts from sessions (handle None values)
+                total_earnings = sum(
+                    session.get("amount", 0.0) or 0.0 
+                    for session in valid_sessions
+                )
             
             # Get reviews and calculate average rating
             reviews_result = self.supabase.table("mentor_reviews").select("overall_rating").eq("mentor_id", mentor_id).execute()
@@ -528,10 +537,14 @@ class MentorService:
                     metadata={"status": interest["status"], "message": interest.get("message")}
                 ))
             
-            # Get recent sessions
-            sessions_result = self.supabase.table("sessions").select("*, users!sessions_mentee_id_fkey(full_name)").eq("mentor_id", mentor_id).order("created_at", desc=True).limit(limit).execute()
+            # Get recent sessions (only where payment_status is not "pending")
+            # Use .in_() to explicitly include only "success" and "failed" statuses
+            sessions_result = self.supabase.table("sessions").select("*, users!sessions_mentee_id_fkey(full_name)").eq("mentor_id", mentor_id).in_("payment_status", ["success", "failed"]).order("created_at", desc=True).limit(limit).execute()
             
             for session in sessions_result.data:
+                # Double-check: skip if payment_status is pending or null
+                if not session.get("payment_status") or session.get("payment_status") == "pending":
+                    continue
                 mentee_name = session.get("users", {}).get("full_name", "Unknown")
                 activity_type = "session_confirmed"
                 title = f"Call with {mentee_name} confirmed for {session['scheduled_date']} at {session['start_time']}"
@@ -597,10 +610,16 @@ class MentorService:
             current_time = now.strftime("%H:%M:%S")
             
             # Get upcoming sessions (scheduled for today or future dates)
-            sessions_result = self.supabase.table("sessions").select("*, users!sessions_mentee_id_fkey(full_name)").eq("mentor_id", mentor_id).gte("scheduled_date", current_date).order("scheduled_date", desc=False).order("start_time", desc=False).limit(limit).execute()
+            # Only get sessions where payment_status is not "pending"
+            # Use .in_() to explicitly include only "success" and "failed" statuses
+            sessions_result = self.supabase.table("sessions").select("*, users!sessions_mentee_id_fkey(full_name)").eq("mentor_id", mentor_id).in_("payment_status", ["success", "failed"]).gte("scheduled_date", current_date).order("scheduled_date", desc=False).order("start_time", desc=False).limit(limit).execute()
             
             upcoming_calls = []
             for session in sessions_result.data:
+                # Skip if payment_status is pending or null
+                if not session.get("payment_status") or session.get("payment_status") == "pending":
+                    continue
+                
                 # Check if session is in the future
                 session_date = session["scheduled_date"]
                 session_time = session["start_time"]

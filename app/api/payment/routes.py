@@ -438,11 +438,67 @@ async def update_session_payment(
 @router.get("/session/{session_id}/payment", response_model=dict)
 async def get_session_payment(
     session_id: str,
+    razorpay_payment_id: Optional[str] = None,
+    razorpay_signature: Optional[str] = None,
+    razorpay_order_id: Optional[str] = None,
     current_user: TokenData = Depends(get_current_user)
 ):
-    """Get payment details for a specific session"""
+    """Get payment details for a specific session. If payment verification parameters are provided, verifies payment and updates session status."""
     try:
         supabase = get_supabase()
+        
+        # If payment verification parameters are provided, verify and update
+        if razorpay_payment_id and razorpay_signature and razorpay_order_id:
+            # Verify payment signature
+            from app.services.payment.payment_service import payment_service
+            if not payment_service._verify_payment_signature(razorpay_order_id, razorpay_payment_id, razorpay_signature):
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid payment signature"
+                )
+            
+            # Get session payment record
+            payment_result = supabase.table("session_payments").select("*").eq(
+                "session_id", session_id
+            ).eq("razorpay_order_id", razorpay_order_id).execute()
+            
+            if not payment_result.data:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Payment record not found for this session"
+                )
+            
+            payment = payment_result.data[0]
+            
+            # Verify access
+            if payment["mentee_id"] != current_user.user_id and payment["mentor_id"] != current_user.user_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Access denied"
+                )
+            
+            # Update payment status to captured/success
+            update_payment_data = {
+                "razorpay_payment_id": razorpay_payment_id,
+                "status": "captured",
+                "razorpay_signature": razorpay_signature,
+                "updated_at": datetime.utcnow().isoformat()
+            }
+            
+            supabase.table("session_payments").update(update_payment_data).eq(
+                "id", payment["id"]
+            ).execute()
+            
+            # Update session payment_status to success
+            supabase.table("sessions").update({
+                "payment_status": "success",
+                "updated_at": datetime.utcnow().isoformat()
+            }).eq("id", session_id).execute()
+            
+            # Trigger payment success handler to send calendar invites
+            from app.services.payment.session_payment_service import session_payment_service
+            await session_payment_service.handle_payment_success(razorpay_payment_id, razorpay_order_id)
+        
         # Use session_payments table for session-specific payments
         result = supabase.table("session_payments").select(
             "*, mentee:mentee_id(*), mentor:mentor_id(*)"
