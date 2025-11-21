@@ -407,13 +407,26 @@ class MentorService:
             logger.error(f"Error creating mentor details: {e}")
             raise
 
-    async def get_mentor_details_by_user_id(self, user_id: str) -> Optional[MentorDetailsResponse]:
+    async def get_mentor_details_by_user_id(self, user_id: str, include_education: bool = False) -> Optional[MentorDetailsResponse]:
         """Get mentor details by user ID"""
         try:
             result = self.supabase.table("mentor_details").select("*").eq("user_id", user_id).execute()
             
             if result.data:
-                return self._convert_to_mentor_response(result.data[0])
+                mentor_response = self._convert_to_mentor_response(result.data[0])
+                
+                # Optionally fetch education entries
+                if include_education:
+                    try:
+                        from app.services.user.mentor_education_service import mentor_education_service
+                        education_entries = await mentor_education_service.get_education_entries(user_id)
+                        mentor_response.education_entries = education_entries
+                    except Exception as e:
+                        logger.warning(f"Error fetching education entries: {e}")
+                        # Don't fail if education fetch fails
+                        mentor_response.education_entries = []
+                
+                return mentor_response
             return None
 
         except Exception as e:

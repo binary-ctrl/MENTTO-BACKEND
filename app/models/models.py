@@ -223,12 +223,57 @@ class MentorDetailsUpdate(BaseModel):
     community_referral: Optional[bool] = None
 
 
+# Mentor Education Models (for storing multiple education entries including abroad universities)
+class MentorEducationBase(BaseModel):
+    university_name: str = Field(..., description="Name of the university/institution")
+    country: str = Field(..., description="Country where the university is located")
+    graduation_date: Optional[str] = Field(None, description="Graduation date (e.g., 'May 2020' or '2020')")
+    relationship: str = Field(..., description="Relationship with university: 'current', 'alumni',  etc.")
+    education_level: str = Field(..., description="Education level: 'bachelor', 'master', 'phd', 'diploma', etc.")
+    course: str = Field(..., description="Course/Major/Degree name")
+    grade: Optional[str] = Field(None, description="Final grade or GPA")
+    is_primary: bool = Field(default=False, description="Whether this is the primary/current education for mentoring")
+    order_index: Optional[int] = Field(None, description="Order for sorting (lower number = higher priority)")
+
+
+class MentorEducationCreate(MentorEducationBase):
+    mentor_id: str = Field(..., description="ID of the mentor this education belongs to")
+
+
+class MentorEducationBulkCreate(BaseModel):
+    mentor_id: str = Field(..., description="ID of the mentor these education entries belong to")
+    education_entries: List[MentorEducationBase] = Field(..., min_items=1, description="List of education entries to create")
+
+
+class MentorEducationUpdate(BaseModel):
+    university_name: Optional[str] = None
+    country: Optional[str] = None
+    graduation_date: Optional[str] = None
+    relationship: Optional[str] = None
+    education_level: Optional[str] = None
+    course: Optional[str] = None
+    grade: Optional[str] = None
+    is_primary: Optional[bool] = None
+    order_index: Optional[int] = None
+
+
+class MentorEducationResponse(MentorEducationBase):
+    id: str
+    mentor_id: str
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
 class MentorDetailsResponse(MentorDetailsBase):
     user_id: str
     currency: str = "INR"
     verification_status: Optional[str] = "pending"  # pending, verified, rejected
     created_at: datetime
     updated_at: datetime
+    education_entries: Optional[List[MentorEducationResponse]] = None  # All education entries including abroad universities
 
     class Config:
         from_attributes = True
