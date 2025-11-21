@@ -9,12 +9,14 @@ from app.models.models import (
     BankDetailsCreate,
     SessionCreateRequest, SessionResponse, SessionPaymentRequest, SessionPaymentResponse,
     TransferRequest, TransferResponse, SuccessResponse, ErrorResponse,
-    MentorDashboardResponse, MentorshipInterestResponse
+    MentorDashboardResponse, MentorshipInterestResponse,
+    MentorEducationCreate, MentorEducationBulkCreate, MentorEducationUpdate, MentorEducationResponse
 )
 from app.services.payment.mentor_setup_service import mentor_setup_service
 from app.services.payment.session_payment_service import session_payment_service
 from app.services.payment.bank_details_service import bank_details_service
 from app.services.user.services import mentor_service, mentorship_interest_service
+from app.services.user.mentor_education_service import mentor_education_service
 
 router = APIRouter(prefix="/mentors", tags=["mentors"])
 logger = logging.getLogger(__name__)
@@ -232,7 +234,10 @@ async def create_mentor_details(
         )
 
 @router.get("/details", response_model=MentorDetailsResponse)
-async def get_mentor_details(current_user: dict = Depends(get_current_user)):
+async def get_mentor_details(
+    include_education: bool = Query(False, description="Include education entries in response"),
+    current_user: dict = Depends(get_current_user)
+):
     """Get mentor details for current user"""
     try:
         # Resolve user_id robustly from token
@@ -244,7 +249,7 @@ async def get_mentor_details(current_user: dict = Depends(get_current_user)):
         if not user_id:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
 
-        mentor_details = await mentor_service.get_mentor_details_by_user_id(user_id)
+        mentor_details = await mentor_service.get_mentor_details_by_user_id(user_id, include_education=include_education)
         if not mentor_details:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -464,4 +469,245 @@ async def get_mentor_mentees(
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to get mentor mentees"
+        )
+
+# Mentor Education Endpoints
+@router.post("/education", response_model=MentorEducationResponse)
+async def create_education_entry(
+    education_data: MentorEducationCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create a new education entry for the current mentor"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Verify the education entry belongs to the authenticated mentor
+        if education_data.mentor_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot create education entry for another mentor"
+            )
+
+        education_entry = await mentor_education_service.create_education_entry(education_data)
+        return education_entry
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating education entry: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create education entry"
+        )
+
+@router.post("/education/bulk", response_model=List[MentorEducationResponse])
+async def create_education_entries_bulk(
+    bulk_data: MentorEducationBulkCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Create multiple education entries for the current mentor in a single API call"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Verify the education entries belong to the authenticated mentor
+        if bulk_data.mentor_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot create education entries for another mentor"
+            )
+
+        entries = await mentor_education_service.create_education_entries_bulk(bulk_data)
+        return entries
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating education entries in bulk: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create education entries"
+        )
+
+@router.get("/education", response_model=List[MentorEducationResponse])
+async def get_education_entries(current_user: dict = Depends(get_current_user)):
+    """Get all education entries for the current mentor"""
+    try: 
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        entries = await mentor_education_service.get_education_entries(user_id)
+        return entries
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting education entries: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get education entries"
+        )
+
+@router.get("/education/{education_id}", response_model=MentorEducationResponse)
+async def get_education_entry(
+    education_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Get a specific education entry by ID"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        education_entry = await mentor_education_service.get_education_entry(education_id)
+        
+        # Verify the entry belongs to the authenticated mentor
+        if education_entry.mentor_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Education entry does not belong to this mentor"
+            )
+
+        return education_entry
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting education entry: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to get education entry"
+        )
+
+@router.put("/education/{education_id}", response_model=MentorEducationResponse)
+async def update_education_entry(
+    education_id: str,
+    update_data: MentorEducationUpdate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Update an education entry"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Get existing entry to verify ownership
+        existing = await mentor_education_service.get_education_entry(education_id)
+        if existing.mentor_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot update education entry for another mentor"
+            )
+
+        updated_entry = await mentor_education_service.update_education_entry(education_id, update_data)
+        return updated_entry
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating education entry: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update education entry"
+        )
+
+@router.delete("/education/{education_id}")
+async def delete_education_entry(
+    education_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Delete an education entry"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        # Get existing entry to verify ownership
+        existing = await mentor_education_service.get_education_entry(education_id)
+        if existing.mentor_id != user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cannot delete education entry for another mentor"
+            )
+
+        success = await mentor_education_service.delete_education_entry(education_id)
+        
+        return {
+            "success": success,
+            "message": "Education entry deleted successfully"
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting education entry: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete education entry"
+        )
+
+@router.post("/education/{education_id}/set-primary", response_model=MentorEducationResponse)
+async def set_primary_education(
+    education_id: str,
+    sync_to_university_associated: bool = Query(True, description="Whether to sync to university_associated field"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Set an education entry as primary and optionally sync to university_associated"""
+    try:
+        # Resolve user_id robustly from token
+        user_id = (
+            getattr(current_user, "user_id", None)
+            or getattr(current_user, "sub", None)
+            or (current_user.get("user_id") if isinstance(current_user, dict) else None)
+        )
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+
+        updated_entry = await mentor_education_service.set_primary_education(
+            user_id, 
+            education_id, 
+            sync_to_university_associated=sync_to_university_associated
+        )
+        return updated_entry
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error setting primary education: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to set primary education"
         )
