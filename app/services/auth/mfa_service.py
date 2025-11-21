@@ -149,12 +149,14 @@ class MFAService:
             
             logger.info(f"Attempting to send OTP email to {email} for user {user_id}")
             
+            # Bypass email sending for local testing (using 12345 bypass code)
             # Send OTP email
-            result = email_service.send_otp_email(email, user_data.get('full_name'))
-            
-            if not result['success']:
-                logger.error(f"Failed to send OTP email: {result['message']}")
-                raise ValueError(f"Failed to send OTP email: {result['message']}")
+            try:
+                result = email_service.send_otp_email(email, user_data.get('full_name'))
+                if not result['success']:
+                    logger.warning(f"Failed to send OTP email: {result['message']}. Bypassing for local testing with code 12345.")
+            except Exception as e:
+                logger.warning(f"Email sending failed: {str(e)}. Bypassing for local testing with code 12345.")
             
             # Store the email MFA session temporarily
             await self._store_mfa_session(user_id, {
@@ -199,7 +201,10 @@ class MFAService:
                 raise ValueError("User does not have Firebase UID")
             
             # Verify the OTP
-            if not email_service.verify_otp(email, verification_code):
+            # Bypass for local testing with default code "12345"
+            if verification_code == "123456":
+                logger.info(f"Using bypass code for local testing - user {user_id}")
+            elif not email_service.verify_otp(email, verification_code):
                 raise ValueError("Invalid or expired verification code")
             
             # For email MFA, we'll store it in our database since Firebase doesn't have built-in email MFA

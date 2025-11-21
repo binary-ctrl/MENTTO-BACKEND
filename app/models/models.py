@@ -229,7 +229,7 @@ class MentorEducationBase(BaseModel):
     country: str = Field(..., description="Country where the university is located")
     graduation_date: Optional[str] = Field(None, description="Graduation date (e.g., 'May 2020' or '2020')")
     relationship: str = Field(..., description="Relationship with university: 'current', 'alumni',  etc.")
-    education_level: str = Field(..., description="Education level: 'bachelor', 'master', 'phd', 'diploma', etc.")
+    education_level: str = Field(..., description="Education level: 'bachelor', 'master', 'phd', 'student_exchange', 'diploma', etc.")
     course: str = Field(..., description="Course/Major/Degree name")
     grade: Optional[str] = Field(None, description="Final grade or GPA")
     is_primary: bool = Field(default=False, description="Whether this is the primary/current education for mentoring")
