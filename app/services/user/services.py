@@ -528,7 +528,7 @@ class MentorService:
             logger.info(f"Getting recent activities for mentor: {mentor_id}")
             activities = []
             
-            # Get recent mentorship interests (pending and accepted)
+            # Get recent mentorship interests (all interests start as accepted)
             interests_result = self.supabase.table("mentorship_interest").select("*, users!mentorship_interest_mentee_id_fkey(full_name)").eq("mentor_id", mentor_id).order("created_at", desc=True).limit(limit).execute()
             
             for interest in interests_result.data:
@@ -536,7 +536,10 @@ class MentorService:
                 activity_type = "interest"
                 title = f"{mentee_name} showed interest in your profile"
                 description = f"{mentee_name} sent you a mentorship request"
-                is_new = interest["status"] == "pending"
+                # Mark as new if created within last 7 days (since all interests start as accepted now)
+                interest_created_at = datetime.fromisoformat(interest["created_at"].replace('Z', '+00:00'))
+                days_since_creation = (datetime.now(interest_created_at.tzinfo) - interest_created_at).days
+                is_new = days_since_creation <= 7
                 
                 activities.append(ActivityResponse(
                     id=f"interest_{interest['id']}",
@@ -731,13 +734,13 @@ class MentorshipInterestService:
             if not mentor or mentor.role != "mentor":
                 raise Exception("Invalid mentor ID or user is not a mentor")
 
-            # Create interest
+            # Create interest - automatically accepted (no pending state)
             interest_dict = {
                 "mentee_id": mentee_id,
                 "mentor_id": interest_data.mentor_id,
                 "message": interest_data.message,
                 "mentee_notes": interest_data.mentee_notes,
-                "status": "pending"
+                "status": "accepted"
             }
 
             result = self.supabase.table("mentorship_interest").insert(interest_dict).execute()
