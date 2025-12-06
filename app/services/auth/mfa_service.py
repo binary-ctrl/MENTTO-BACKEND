@@ -201,10 +201,11 @@ class MFAService:
                 raise ValueError("User does not have Firebase UID")
             
             # Verify the OTP
-            # Bypass for local testing with default code "12345"
-            if verification_code == "123456":
-                logger.info(f"Using bypass code for local testing - user {user_id}")
-            elif not email_service.verify_otp(email, verification_code):
+            # Bypass code commented out for security - OTP verification is now required
+            # if verification_code == "123456":
+            #     logger.info(f"Using bypass code for local testing - user {user_id}")
+            # elif not email_service.verify_otp(email, verification_code):
+            if not email_service.verify_otp(email, verification_code):
                 raise ValueError("Invalid or expired verification code")
             
             # For email MFA, we'll store it in our database since Firebase doesn't have built-in email MFA
