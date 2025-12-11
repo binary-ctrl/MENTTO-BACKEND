@@ -956,74 +956,121 @@ class MentorshipInterestService:
             interests = []
             for data in result.data:
                 # Get mentee and mentor details separately
-                mentee_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentee_id"]).execute()
+                mentee_result = self.supabase.table("users").select("full_name, email, role").eq("user_id", data["mentee_id"]).execute()
                 mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
                 
-                # Get mentee details from mentee_details table
-                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, profile_pic_url, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description, how_mentto_help, universities_exploring, courses_exploring, senior_secondary_school, educational_board, higher_secondary_stream, grade_10_score, grade_12_score, graduation_university, graduation_month_year, undergraduate_major, undergraduate_final_grade, taken_standardized_tests, standardized_tests_taken, test_scores, taken_english_tests, english_tests_taken, current_stage, research_methods, finance_education, planning_settle_abroad, hobbies, extracurricular_activities, cocurricular_activities, weather_preference, current_designation, work_experience_range, company_designation_history, lived_away_from_home, how_found_mentto, community_referral").eq("user_id", data["mentee_id"]).execute()
-                
-                # Add user details to interest data
-                if mentee_result.data:
-                    mentee_data = {
-                        "full_name": mentee_result.data[0]["full_name"],
-                        "email": mentee_result.data[0]["email"]
-                    }
+                # Check if the mentee_id actually belongs to a parent
+                is_parent = False
+                if mentee_result.data and mentee_result.data[0].get("role") == "parent":
+                    is_parent = True
+                    # Get parent questionnaire data
+                    parent_questionnaire_result = self.supabase.table("questionnaire_responses").select("*").eq("user_id", data["mentee_id"]).execute()
                     
-                    # Add mentee details if available
-                    if mentee_details_result.data:
-                        mentee_details = mentee_details_result.data[0]
-                        mentee_data.update({
-                            "first_name": mentee_details.get("first_name"),
-                            "last_name": mentee_details.get("last_name"),
-                            "phone_number": mentee_details.get("phone_number"),
-                            "profile_pic_url": mentee_details.get("profile_pic_url"),
-                            "countries_considering": mentee_details.get("countries_considering"),
-                            "education_level": mentee_details.get("education_level"),
-                            "why_study_abroad": mentee_details.get("why_study_abroad"),
-                            "intake_applying_for": mentee_details.get("intake_applying_for"),
-                            "year_planning_abroad": mentee_details.get("year_planning_abroad"),
-                            "target_industry": mentee_details.get("target_industry"),
-                            "self_description": mentee_details.get("self_description"),
-                            "how_mentto_help": mentee_details.get("how_mentto_help"),
-                            # Academic & Education
-                            "universities_exploring": mentee_details.get("universities_exploring"),
-                            "courses_exploring": mentee_details.get("courses_exploring"),
-                            "senior_secondary_school": mentee_details.get("senior_secondary_school"),
-                            "educational_board": mentee_details.get("educational_board"),
-                            "higher_secondary_stream": mentee_details.get("higher_secondary_stream"),
-                            "grade_10_score": mentee_details.get("grade_10_score"),
-                            "grade_12_score": mentee_details.get("grade_12_score"),
-                            "graduation_university": mentee_details.get("graduation_university"),
-                            "graduation_month_year": mentee_details.get("graduation_month_year"),
-                            "undergraduate_major": mentee_details.get("undergraduate_major"),
-                            "undergraduate_final_grade": mentee_details.get("undergraduate_final_grade"),
-                            # Test Scores
-                            "taken_standardized_tests": mentee_details.get("taken_standardized_tests"),
-                            "standardized_tests_taken": mentee_details.get("standardized_tests_taken"),
-                            "test_scores": mentee_details.get("test_scores"),
-                            "taken_english_tests": mentee_details.get("taken_english_tests"),
-                            "english_tests_taken": mentee_details.get("english_tests_taken"),
-                            # Journey & Planning
-                            "current_stage": mentee_details.get("current_stage"),
-                            "research_methods": mentee_details.get("research_methods"),
-                            "finance_education": mentee_details.get("finance_education"),
-                            "planning_settle_abroad": mentee_details.get("planning_settle_abroad"),
-                            # Personal & Interests
-                            "hobbies": mentee_details.get("hobbies"),
-                            "extracurricular_activities": mentee_details.get("extracurricular_activities"),
-                            "cocurricular_activities": mentee_details.get("cocurricular_activities"),
-                            "weather_preference": mentee_details.get("weather_preference"),
-                            # Career/Professional
-                            "current_designation": mentee_details.get("current_designation"),
-                            "work_experience_range": mentee_details.get("work_experience_range"),
-                            "company_designation_history": mentee_details.get("company_designation_history"),
-                            "lived_away_from_home": mentee_details.get("lived_away_from_home"),
-                            # Discovery
-                            "how_found_mentto": mentee_details.get("how_found_mentto"),
-                            "community_referral": mentee_details.get("community_referral")
+                    if parent_questionnaire_result.data:
+                        parent_data = {
+                            "full_name": mentee_result.data[0]["full_name"],
+                            "email": mentee_result.data[0]["email"],
+                            "is_parent": True
+                        }
+                        parent_questionnaire = parent_questionnaire_result.data[0]
+                        parent_data.update({
+                            "first_name": parent_questionnaire.get("first_name"),
+                            "last_name": parent_questionnaire.get("last_name"),
+                            "phone_number": parent_questionnaire.get("phone_number"),
+                            "profile_pic_url": parent_questionnaire.get("profile_pic_url"),
+                            "ward_full_name": parent_questionnaire.get("ward_full_name"),
+                            "why_study_abroad": parent_questionnaire.get("why_study_abroad"),
+                            "year_planning_abroad": parent_questionnaire.get("year_planning_abroad"),
+                            "financial_investment_factor": parent_questionnaire.get("financial_investment_factor"),
+                            "finance_education": parent_questionnaire.get("finance_education"),
+                            "current_stage": parent_questionnaire.get("current_stage"),
+                            "research_methods": parent_questionnaire.get("research_methods"),
+                            "countries_considering": parent_questionnaire.get("countries_considering"),
+                            "universities_exploring": parent_questionnaire.get("universities_exploring"),
+                            "courses_exploring": parent_questionnaire.get("courses_exploring"),
+                            "taken_standardized_tests": parent_questionnaire.get("taken_standardized_tests"),
+                            "planning_settle_abroad": parent_questionnaire.get("planning_settle_abroad"),
+                            "target_industry": parent_questionnaire.get("target_industry"),
+                            "education_level": parent_questionnaire.get("education_level"),
+                            "concerns_worries": parent_questionnaire.get("concerns_worries"),
+                            "support_exploring_options": parent_questionnaire.get("support_exploring_options"),
+                            "support_needed": parent_questionnaire.get("support_needed"),
+                            "how_mentto_help": parent_questionnaire.get("how_mentto_help"),
+                            "how_found_mentto": parent_questionnaire.get("how_found_mentto"),
+                            "graduation_university": parent_questionnaire.get("graduation_university"),
+                            "graduation_month_year": parent_questionnaire.get("graduation_month_year"),
+                            "undergraduate_major": parent_questionnaire.get("undergraduate_major"),
+                            "undergraduate_final_grade": parent_questionnaire.get("undergraduate_final_grade")
                         })
+                        data["parent"] = parent_data
+                        data["is_parent_interest"] = True
+                else:
+                    # Get mentee details from mentee_details table
+                    mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, profile_pic_url, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description, how_mentto_help, universities_exploring, courses_exploring, senior_secondary_school, educational_board, higher_secondary_stream, grade_10_score, grade_12_score, graduation_university, graduation_month_year, undergraduate_major, undergraduate_final_grade, taken_standardized_tests, standardized_tests_taken, test_scores, taken_english_tests, english_tests_taken, current_stage, research_methods, finance_education, planning_settle_abroad, hobbies, extracurricular_activities, cocurricular_activities, weather_preference, current_designation, work_experience_range, company_designation_history, lived_away_from_home, how_found_mentto, community_referral").eq("user_id", data["mentee_id"]).execute()
                     
-                    data["mentee"] = mentee_data
+                    # Add user details to interest data
+                    if mentee_result.data:
+                        mentee_data = {
+                            "full_name": mentee_result.data[0]["full_name"],
+                            "email": mentee_result.data[0]["email"]
+                        }
+                        
+                        # Add mentee details if available
+                        if mentee_details_result.data:
+                            mentee_details = mentee_details_result.data[0]
+                            mentee_data.update({
+                                "first_name": mentee_details.get("first_name"),
+                                "last_name": mentee_details.get("last_name"),
+                                "phone_number": mentee_details.get("phone_number"),
+                                "profile_pic_url": mentee_details.get("profile_pic_url"),
+                                "countries_considering": mentee_details.get("countries_considering"),
+                                "education_level": mentee_details.get("education_level"),
+                                "why_study_abroad": mentee_details.get("why_study_abroad"),
+                                "intake_applying_for": mentee_details.get("intake_applying_for"),
+                                "year_planning_abroad": mentee_details.get("year_planning_abroad"),
+                                "target_industry": mentee_details.get("target_industry"),
+                                "self_description": mentee_details.get("self_description"),
+                                "how_mentto_help": mentee_details.get("how_mentto_help"),
+                                # Academic & Education
+                                "universities_exploring": mentee_details.get("universities_exploring"),
+                                "courses_exploring": mentee_details.get("courses_exploring"),
+                                "senior_secondary_school": mentee_details.get("senior_secondary_school"),
+                                "educational_board": mentee_details.get("educational_board"),
+                                "higher_secondary_stream": mentee_details.get("higher_secondary_stream"),
+                                "grade_10_score": mentee_details.get("grade_10_score"),
+                                "grade_12_score": mentee_details.get("grade_12_score"),
+                                "graduation_university": mentee_details.get("graduation_university"),
+                                "graduation_month_year": mentee_details.get("graduation_month_year"),
+                                "undergraduate_major": mentee_details.get("undergraduate_major"),
+                                "undergraduate_final_grade": mentee_details.get("undergraduate_final_grade"),
+                                # Test Scores
+                                "taken_standardized_tests": mentee_details.get("taken_standardized_tests"),
+                                "standardized_tests_taken": mentee_details.get("standardized_tests_taken"),
+                                "test_scores": mentee_details.get("test_scores"),
+                                "taken_english_tests": mentee_details.get("taken_english_tests"),
+                                "english_tests_taken": mentee_details.get("english_tests_taken"),
+                                # Journey & Planning
+                                "current_stage": mentee_details.get("current_stage"),
+                                "research_methods": mentee_details.get("research_methods"),
+                                "finance_education": mentee_details.get("finance_education"),
+                                "planning_settle_abroad": mentee_details.get("planning_settle_abroad"),
+                                # Personal & Interests
+                                "hobbies": mentee_details.get("hobbies"),
+                                "extracurricular_activities": mentee_details.get("extracurricular_activities"),
+                                "cocurricular_activities": mentee_details.get("cocurricular_activities"),
+                                "weather_preference": mentee_details.get("weather_preference"),
+                                # Career/Professional
+                                "current_designation": mentee_details.get("current_designation"),
+                                "work_experience_range": mentee_details.get("work_experience_range"),
+                                "company_designation_history": mentee_details.get("company_designation_history"),
+                                "lived_away_from_home": mentee_details.get("lived_away_from_home"),
+                                # Discovery
+                                "how_found_mentto": mentee_details.get("how_found_mentto"),
+                                "community_referral": mentee_details.get("community_referral")
+                            })
+                        
+                        data["mentee"] = mentee_data
+                        data["is_parent_interest"] = False
                 
                 if mentor_result.data:
                     data["mentor"] = {
@@ -1055,15 +1102,60 @@ class MentorshipInterestService:
             interests = []
             for data in result.data:
                 # Get mentee and mentor details separately
-                mentee_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentee_id"]).execute()
+                mentee_result = self.supabase.table("users").select("full_name, email, role").eq("user_id", data["mentee_id"]).execute()
                 mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
                 
-                # Add user details to interest data
-                if mentee_result.data:
-                    data["mentee"] = {
-                        "full_name": mentee_result.data[0]["full_name"],
-                        "email": mentee_result.data[0]["email"]
-                    }
+                # Check if the mentee_id actually belongs to a parent
+                if mentee_result.data and mentee_result.data[0].get("role") == "parent":
+                    # Get parent questionnaire data
+                    parent_questionnaire_result = self.supabase.table("questionnaire_responses").select("*").eq("user_id", data["mentee_id"]).execute()
+                    
+                    if parent_questionnaire_result.data:
+                        parent_data = {
+                            "full_name": mentee_result.data[0]["full_name"],
+                            "email": mentee_result.data[0]["email"],
+                            "is_parent": True
+                        }
+                        parent_questionnaire = parent_questionnaire_result.data[0]
+                        parent_data.update({
+                            "first_name": parent_questionnaire.get("first_name"),
+                            "last_name": parent_questionnaire.get("last_name"),
+                            "phone_number": parent_questionnaire.get("phone_number"),
+                            "profile_pic_url": parent_questionnaire.get("profile_pic_url"),
+                            "ward_full_name": parent_questionnaire.get("ward_full_name"),
+                            "why_study_abroad": parent_questionnaire.get("why_study_abroad"),
+                            "year_planning_abroad": parent_questionnaire.get("year_planning_abroad"),
+                            "financial_investment_factor": parent_questionnaire.get("financial_investment_factor"),
+                            "finance_education": parent_questionnaire.get("finance_education"),
+                            "current_stage": parent_questionnaire.get("current_stage"),
+                            "research_methods": parent_questionnaire.get("research_methods"),
+                            "countries_considering": parent_questionnaire.get("countries_considering"),
+                            "universities_exploring": parent_questionnaire.get("universities_exploring"),
+                            "courses_exploring": parent_questionnaire.get("courses_exploring"),
+                            "taken_standardized_tests": parent_questionnaire.get("taken_standardized_tests"),
+                            "planning_settle_abroad": parent_questionnaire.get("planning_settle_abroad"),
+                            "target_industry": parent_questionnaire.get("target_industry"),
+                            "education_level": parent_questionnaire.get("education_level"),
+                            "concerns_worries": parent_questionnaire.get("concerns_worries"),
+                            "support_exploring_options": parent_questionnaire.get("support_exploring_options"),
+                            "support_needed": parent_questionnaire.get("support_needed"),
+                            "how_mentto_help": parent_questionnaire.get("how_mentto_help"),
+                            "how_found_mentto": parent_questionnaire.get("how_found_mentto"),
+                            "graduation_university": parent_questionnaire.get("graduation_university"),
+                            "graduation_month_year": parent_questionnaire.get("graduation_month_year"),
+                            "undergraduate_major": parent_questionnaire.get("undergraduate_major"),
+                            "undergraduate_final_grade": parent_questionnaire.get("undergraduate_final_grade")
+                        })
+                        data["parent"] = parent_data
+                        data["is_parent_interest"] = True
+                else:
+                    # Add user details to interest data
+                    if mentee_result.data:
+                        data["mentee"] = {
+                            "full_name": mentee_result.data[0]["full_name"],
+                            "email": mentee_result.data[0]["email"]
+                        }
+                    data["is_parent_interest"] = False
                 
                 if mentor_result.data:
                     data["mentor"] = {
@@ -1101,36 +1193,83 @@ class MentorshipInterestService:
             mentees = []
             for data in result.data:
                 # Get mentee and mentor details separately
-                mentee_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentee_id"]).execute()
+                mentee_result = self.supabase.table("users").select("full_name, email, role").eq("user_id", data["mentee_id"]).execute()
                 mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
                 
-                # Get mentee details from mentee_details table
-                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
-                
-                # Add user details to interest data
-                if mentee_result.data:
-                    mentee_data = {
-                        "full_name": mentee_result.data[0]["full_name"],
-                        "email": mentee_result.data[0]["email"]
-                    }
+                # Check if the mentee_id actually belongs to a parent
+                is_parent = False
+                if mentee_result.data and mentee_result.data[0].get("role") == "parent":
+                    is_parent = True
+                    # Get parent questionnaire data
+                    parent_questionnaire_result = self.supabase.table("questionnaire_responses").select("*").eq("user_id", data["mentee_id"]).execute()
                     
-                    # Add mentee details if available
-                    if mentee_details_result.data:
-                        mentee_details = mentee_details_result.data[0]
-                        mentee_data.update({
-                            "first_name": mentee_details.get("first_name"),
-                            "last_name": mentee_details.get("last_name"),
-                            "phone_number": mentee_details.get("phone_number"),
-                            "countries_considering": mentee_details.get("countries_considering"),
-                            "education_level": mentee_details.get("education_level"),
-                            "why_study_abroad": mentee_details.get("why_study_abroad"),
-                            "intake_applying_for": mentee_details.get("intake_applying_for"),
-                            "year_planning_abroad": mentee_details.get("year_planning_abroad"),
-                            "target_industry": mentee_details.get("target_industry"),
-                            "self_description": mentee_details.get("self_description")
+                    if parent_questionnaire_result.data:
+                        parent_data = {
+                            "full_name": mentee_result.data[0]["full_name"],
+                            "email": mentee_result.data[0]["email"],
+                            "is_parent": True
+                        }
+                        parent_questionnaire = parent_questionnaire_result.data[0]
+                        parent_data.update({
+                            "first_name": parent_questionnaire.get("first_name"),
+                            "last_name": parent_questionnaire.get("last_name"),
+                            "phone_number": parent_questionnaire.get("phone_number"),
+                            "profile_pic_url": parent_questionnaire.get("profile_pic_url"),
+                            "ward_full_name": parent_questionnaire.get("ward_full_name"),
+                            "why_study_abroad": parent_questionnaire.get("why_study_abroad"),
+                            "year_planning_abroad": parent_questionnaire.get("year_planning_abroad"),
+                            "financial_investment_factor": parent_questionnaire.get("financial_investment_factor"),
+                            "finance_education": parent_questionnaire.get("finance_education"),
+                            "current_stage": parent_questionnaire.get("current_stage"),
+                            "research_methods": parent_questionnaire.get("research_methods"),
+                            "countries_considering": parent_questionnaire.get("countries_considering"),
+                            "universities_exploring": parent_questionnaire.get("universities_exploring"),
+                            "courses_exploring": parent_questionnaire.get("courses_exploring"),
+                            "taken_standardized_tests": parent_questionnaire.get("taken_standardized_tests"),
+                            "planning_settle_abroad": parent_questionnaire.get("planning_settle_abroad"),
+                            "target_industry": parent_questionnaire.get("target_industry"),
+                            "education_level": parent_questionnaire.get("education_level"),
+                            "concerns_worries": parent_questionnaire.get("concerns_worries"),
+                            "support_exploring_options": parent_questionnaire.get("support_exploring_options"),
+                            "support_needed": parent_questionnaire.get("support_needed"),
+                            "how_mentto_help": parent_questionnaire.get("how_mentto_help"),
+                            "how_found_mentto": parent_questionnaire.get("how_found_mentto"),
+                            "graduation_university": parent_questionnaire.get("graduation_university"),
+                            "graduation_month_year": parent_questionnaire.get("graduation_month_year"),
+                            "undergraduate_major": parent_questionnaire.get("undergraduate_major"),
+                            "undergraduate_final_grade": parent_questionnaire.get("undergraduate_final_grade")
                         })
+                        data["parent"] = parent_data
+                        data["is_parent_interest"] = True
+                else:
+                    # Get mentee details from mentee_details table
+                    mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
                     
-                    data["mentee"] = mentee_data
+                    # Add user details to interest data
+                    if mentee_result.data:
+                        mentee_data = {
+                            "full_name": mentee_result.data[0]["full_name"],
+                            "email": mentee_result.data[0]["email"]
+                        }
+                        
+                        # Add mentee details if available
+                        if mentee_details_result.data:
+                            mentee_details = mentee_details_result.data[0]
+                            mentee_data.update({
+                                "first_name": mentee_details.get("first_name"),
+                                "last_name": mentee_details.get("last_name"),
+                                "phone_number": mentee_details.get("phone_number"),
+                                "countries_considering": mentee_details.get("countries_considering"),
+                                "education_level": mentee_details.get("education_level"),
+                                "why_study_abroad": mentee_details.get("why_study_abroad"),
+                                "intake_applying_for": mentee_details.get("intake_applying_for"),
+                                "year_planning_abroad": mentee_details.get("year_planning_abroad"),
+                                "target_industry": mentee_details.get("target_industry"),
+                                "self_description": mentee_details.get("self_description")
+                            })
+                        
+                        data["mentee"] = mentee_data
+                        data["is_parent_interest"] = False
                 
                 if mentor_result.data:
                     data["mentor"] = {
@@ -1329,7 +1468,38 @@ class MentorshipInterestService:
             mentor_previous_mentoring_experience=data.get("mentor", {}).get("previous_mentoring_experience") if data.get("mentor") else None,
             mentor_brief_introduction=data.get("mentor", {}).get("brief_introduction") if data.get("mentor") else None,
             mentor_mentorship_hours_per_week=data.get("mentor", {}).get("mentorship_hours_per_week") if data.get("mentor") else None,
-            mentor_profile_pic_url=data.get("mentor", {}).get("profile_pic_url") if data.get("mentor") else None
+            mentor_profile_pic_url=data.get("mentor", {}).get("profile_pic_url") if data.get("mentor") else None,
+            # Parent data (when interest is created by a parent)
+            parent_name=data.get("parent", {}).get("full_name") if data.get("parent") else None,
+            parent_email=None,  # Email excluded for privacy
+            parent_first_name=data.get("parent", {}).get("first_name") if data.get("parent") else None,
+            parent_last_name=data.get("parent", {}).get("last_name") if data.get("parent") else None,
+            parent_phone_number=None,  # Phone number excluded for privacy
+            parent_profile_pic_url=data.get("parent", {}).get("profile_pic_url") if data.get("parent") else None,
+            ward_full_name=data.get("parent", {}).get("ward_full_name") if data.get("parent") else None,
+            parent_why_study_abroad=data.get("parent", {}).get("why_study_abroad") if data.get("parent") else None,
+            parent_year_planning_abroad=data.get("parent", {}).get("year_planning_abroad") if data.get("parent") else None,
+            parent_financial_investment_factor=data.get("parent", {}).get("financial_investment_factor") if data.get("parent") else None,
+            parent_finance_education=data.get("parent", {}).get("finance_education") if data.get("parent") else None,
+            parent_current_stage=data.get("parent", {}).get("current_stage") if data.get("parent") else None,
+            parent_research_methods=data.get("parent", {}).get("research_methods") if data.get("parent") else None,
+            parent_countries_considering=data.get("parent", {}).get("countries_considering") if data.get("parent") else None,
+            parent_universities_exploring=data.get("parent", {}).get("universities_exploring") if data.get("parent") else None,
+            parent_courses_exploring=data.get("parent", {}).get("courses_exploring") if data.get("parent") else None,
+            parent_taken_standardized_tests=data.get("parent", {}).get("taken_standardized_tests") if data.get("parent") else None,
+            parent_planning_settle_abroad=data.get("parent", {}).get("planning_settle_abroad") if data.get("parent") else None,
+            parent_target_industry=data.get("parent", {}).get("target_industry") if data.get("parent") else None,
+            parent_education_level=data.get("parent", {}).get("education_level") if data.get("parent") else None,
+            parent_concerns_worries=data.get("parent", {}).get("concerns_worries") if data.get("parent") else None,
+            parent_support_exploring_options=data.get("parent", {}).get("support_exploring_options") if data.get("parent") else None,
+            parent_support_needed=data.get("parent", {}).get("support_needed") if data.get("parent") else None,
+            parent_how_mentto_help=data.get("parent", {}).get("how_mentto_help") if data.get("parent") else None,
+            parent_how_found_mentto=data.get("parent", {}).get("how_found_mentto") if data.get("parent") else None,
+            parent_graduation_university=data.get("parent", {}).get("graduation_university") if data.get("parent") else None,
+            parent_graduation_month_year=data.get("parent", {}).get("graduation_month_year") if data.get("parent") else None,
+            parent_undergraduate_major=data.get("parent", {}).get("undergraduate_major") if data.get("parent") else None,
+            parent_undergraduate_final_grade=data.get("parent", {}).get("undergraduate_final_grade") if data.get("parent") else None,
+            is_parent_interest=data.get("is_parent_interest", False)
         )
 
 

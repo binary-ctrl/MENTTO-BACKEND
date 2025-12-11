@@ -450,6 +450,38 @@ class MentorshipInterestResponse(BaseModel):
     mentor_mentorship_hours_per_week: Optional[int] = None
     # Additional media
     mentor_profile_pic_url: Optional[str] = None
+    
+    # Parent data (when interest is created by a parent)
+    parent_name: Optional[str] = None
+    parent_email: Optional[str] = None
+    parent_first_name: Optional[str] = None
+    parent_last_name: Optional[str] = None
+    parent_phone_number: Optional[str] = None
+    parent_profile_pic_url: Optional[str] = None
+    ward_full_name: Optional[str] = None
+    parent_why_study_abroad: Optional[List[str]] = None
+    parent_year_planning_abroad: Optional[str] = None
+    parent_financial_investment_factor: Optional[bool] = None
+    parent_finance_education: Optional[List[str]] = None
+    parent_current_stage: Optional[List[str]] = None
+    parent_research_methods: Optional[List[str]] = None
+    parent_countries_considering: Optional[List[str]] = None
+    parent_universities_exploring: Optional[str] = None
+    parent_courses_exploring: Optional[str] = None
+    parent_taken_standardized_tests: Optional[bool] = None
+    parent_planning_settle_abroad: Optional[str] = None
+    parent_target_industry: Optional[List[str]] = None
+    parent_education_level: Optional[str] = None
+    parent_concerns_worries: Optional[List[str]] = None
+    parent_support_exploring_options: Optional[str] = None
+    parent_support_needed: Optional[List[str]] = None
+    parent_how_mentto_help: Optional[List[str]] = None
+    parent_how_found_mentto: Optional[str] = None
+    parent_graduation_university: Optional[str] = None
+    parent_graduation_month_year: Optional[str] = None
+    parent_undergraduate_major: Optional[str] = None
+    parent_undergraduate_final_grade: Optional[str] = None
+    is_parent_interest: Optional[bool] = None  # Flag to indicate if this interest was created by a parent
 
     class Config:
         from_attributes = True
