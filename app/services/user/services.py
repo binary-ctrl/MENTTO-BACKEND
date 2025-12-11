@@ -1260,7 +1260,7 @@ class MentorshipInterestService:
             mentee_last_name=data.get("mentee", {}).get("last_name") if data.get("mentee") else None,
             mentee_phone_number=None,  # Phone number excluded for privacy
             mentee_countries_considering=data.get("mentee", {}).get("countries_considering") if data.get("mentee") else None,
-            mentee_education_level=data.get("mentee", {}).get("education_level") if data.get("mentee") else None,
+            mentee_education_level=None,  # Education level excluded for privacy
             mentee_why_study_abroad=data.get("mentee", {}).get("why_study_abroad") if data.get("mentee") else None,
             mentee_intake_applying_for=data.get("mentee", {}).get("intake_applying_for") if data.get("mentee") else None,
             mentee_year_planning_abroad=data.get("mentee", {}).get("year_planning_abroad") if data.get("mentee") else None,
@@ -1302,7 +1302,7 @@ class MentorshipInterestService:
             mentee_company_designation_history=data.get("mentee", {}).get("company_designation_history") if data.get("mentee") else None,
             mentee_lived_away_from_home=data.get("mentee", {}).get("lived_away_from_home") if data.get("mentee") else None,
             # Discovery
-            mentee_how_found_mentto=data.get("mentee", {}).get("how_found_mentto") if data.get("mentee") else None,
+            mentee_how_found_mentto=None,  # How found mentto excluded for privacy
             mentee_community_referral=data.get("mentee", {}).get("community_referral") if data.get("mentee") else None,
             # Additional mentor details from mentor onboarding
             mentor_first_name=data.get("mentor", {}).get("first_name") if data.get("mentor") else None,
