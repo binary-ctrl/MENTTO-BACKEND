@@ -1252,13 +1252,13 @@ class MentorshipInterestService:
             created_at=created_at,
             updated_at=updated_at,
             mentee_name=data.get("mentee", {}).get("full_name") if data.get("mentee") else None,
-            mentee_email=data.get("mentee", {}).get("email") if data.get("mentee") else None,
+            mentee_email=None,  # Email excluded for privacy
             mentor_name=data.get("mentor", {}).get("full_name") if data.get("mentor") else None,
-            mentor_email=data.get("mentor", {}).get("email") if data.get("mentor") else None,
+            mentor_email=None,  # Email excluded for privacy
             # Additional mentee details
             mentee_first_name=data.get("mentee", {}).get("first_name") if data.get("mentee") else None,
             mentee_last_name=data.get("mentee", {}).get("last_name") if data.get("mentee") else None,
-            mentee_phone_number=data.get("mentee", {}).get("phone_number") if data.get("mentee") else None,
+            mentee_phone_number=None,  # Phone number excluded for privacy
             mentee_countries_considering=data.get("mentee", {}).get("countries_considering") if data.get("mentee") else None,
             mentee_education_level=data.get("mentee", {}).get("education_level") if data.get("mentee") else None,
             mentee_why_study_abroad=data.get("mentee", {}).get("why_study_abroad") if data.get("mentee") else None,
@@ -1307,7 +1307,7 @@ class MentorshipInterestService:
             # Additional mentor details from mentor onboarding
             mentor_first_name=data.get("mentor", {}).get("first_name") if data.get("mentor") else None,
             mentor_last_name=data.get("mentor", {}).get("last_name") if data.get("mentor") else None,
-            mentor_phone_number=data.get("mentor", {}).get("phone_number") if data.get("mentor") else None,
+            mentor_phone_number=None,  # Phone number excluded for privacy
             mentor_study_country=data.get("mentor", {}).get("study_country") if data.get("mentor") else None,
             mentor_university_associated=data.get("mentor", {}).get("university_associated") if data.get("mentor") else None,
             mentor_graduation_date=data.get("mentor", {}).get("graduation_date") if data.get("mentor") else None,
