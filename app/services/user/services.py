@@ -960,7 +960,7 @@ class MentorshipInterestService:
                 mentor_result = self.supabase.table("users").select("full_name, email").eq("user_id", data["mentor_id"]).execute()
                 
                 # Get mentee details from mentee_details table
-                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description").eq("user_id", data["mentee_id"]).execute()
+                mentee_details_result = self.supabase.table("mentee_details").select("first_name, last_name, phone_number, email, profile_pic_url, countries_considering, education_level, why_study_abroad, intake_applying_for, year_planning_abroad, target_industry, self_description, how_mentto_help, universities_exploring, courses_exploring, senior_secondary_school, educational_board, higher_secondary_stream, grade_10_score, grade_12_score, graduation_university, graduation_month_year, undergraduate_major, undergraduate_final_grade, taken_standardized_tests, standardized_tests_taken, test_scores, taken_english_tests, english_tests_taken, current_stage, research_methods, finance_education, planning_settle_abroad, hobbies, extracurricular_activities, cocurricular_activities, weather_preference, current_designation, work_experience_range, company_designation_history, lived_away_from_home, how_found_mentto, community_referral").eq("user_id", data["mentee_id"]).execute()
                 
                 # Add user details to interest data
                 if mentee_result.data:
@@ -976,13 +976,51 @@ class MentorshipInterestService:
                             "first_name": mentee_details.get("first_name"),
                             "last_name": mentee_details.get("last_name"),
                             "phone_number": mentee_details.get("phone_number"),
+                            "profile_pic_url": mentee_details.get("profile_pic_url"),
                             "countries_considering": mentee_details.get("countries_considering"),
                             "education_level": mentee_details.get("education_level"),
                             "why_study_abroad": mentee_details.get("why_study_abroad"),
                             "intake_applying_for": mentee_details.get("intake_applying_for"),
                             "year_planning_abroad": mentee_details.get("year_planning_abroad"),
                             "target_industry": mentee_details.get("target_industry"),
-                            "self_description": mentee_details.get("self_description")
+                            "self_description": mentee_details.get("self_description"),
+                            "how_mentto_help": mentee_details.get("how_mentto_help"),
+                            # Academic & Education
+                            "universities_exploring": mentee_details.get("universities_exploring"),
+                            "courses_exploring": mentee_details.get("courses_exploring"),
+                            "senior_secondary_school": mentee_details.get("senior_secondary_school"),
+                            "educational_board": mentee_details.get("educational_board"),
+                            "higher_secondary_stream": mentee_details.get("higher_secondary_stream"),
+                            "grade_10_score": mentee_details.get("grade_10_score"),
+                            "grade_12_score": mentee_details.get("grade_12_score"),
+                            "graduation_university": mentee_details.get("graduation_university"),
+                            "graduation_month_year": mentee_details.get("graduation_month_year"),
+                            "undergraduate_major": mentee_details.get("undergraduate_major"),
+                            "undergraduate_final_grade": mentee_details.get("undergraduate_final_grade"),
+                            # Test Scores
+                            "taken_standardized_tests": mentee_details.get("taken_standardized_tests"),
+                            "standardized_tests_taken": mentee_details.get("standardized_tests_taken"),
+                            "test_scores": mentee_details.get("test_scores"),
+                            "taken_english_tests": mentee_details.get("taken_english_tests"),
+                            "english_tests_taken": mentee_details.get("english_tests_taken"),
+                            # Journey & Planning
+                            "current_stage": mentee_details.get("current_stage"),
+                            "research_methods": mentee_details.get("research_methods"),
+                            "finance_education": mentee_details.get("finance_education"),
+                            "planning_settle_abroad": mentee_details.get("planning_settle_abroad"),
+                            # Personal & Interests
+                            "hobbies": mentee_details.get("hobbies"),
+                            "extracurricular_activities": mentee_details.get("extracurricular_activities"),
+                            "cocurricular_activities": mentee_details.get("cocurricular_activities"),
+                            "weather_preference": mentee_details.get("weather_preference"),
+                            # Career/Professional
+                            "current_designation": mentee_details.get("current_designation"),
+                            "work_experience_range": mentee_details.get("work_experience_range"),
+                            "company_designation_history": mentee_details.get("company_designation_history"),
+                            "lived_away_from_home": mentee_details.get("lived_away_from_home"),
+                            # Discovery
+                            "how_found_mentto": mentee_details.get("how_found_mentto"),
+                            "community_referral": mentee_details.get("community_referral")
                         })
                     
                     data["mentee"] = mentee_data
@@ -1228,6 +1266,44 @@ class MentorshipInterestService:
             mentee_year_planning_abroad=data.get("mentee", {}).get("year_planning_abroad") if data.get("mentee") else None,
             mentee_target_industry=data.get("mentee", {}).get("target_industry") if data.get("mentee") else None,
             mentee_self_description=data.get("mentee", {}).get("self_description") if data.get("mentee") else None,
+            mentee_profile_pic_url=data.get("mentee", {}).get("profile_pic_url") if data.get("mentee") else None,
+            mentee_how_mentto_help=data.get("mentee", {}).get("how_mentto_help") if data.get("mentee") else None,
+            # Academic & Education
+            mentee_universities_exploring=data.get("mentee", {}).get("universities_exploring") if data.get("mentee") else None,
+            mentee_courses_exploring=data.get("mentee", {}).get("courses_exploring") if data.get("mentee") else None,
+            mentee_senior_secondary_school=data.get("mentee", {}).get("senior_secondary_school") if data.get("mentee") else None,
+            mentee_educational_board=data.get("mentee", {}).get("educational_board") if data.get("mentee") else None,
+            mentee_higher_secondary_stream=data.get("mentee", {}).get("higher_secondary_stream") if data.get("mentee") else None,
+            mentee_grade_10_score=data.get("mentee", {}).get("grade_10_score") if data.get("mentee") else None,
+            mentee_grade_12_score=data.get("mentee", {}).get("grade_12_score") if data.get("mentee") else None,
+            mentee_graduation_university=data.get("mentee", {}).get("graduation_university") if data.get("mentee") else None,
+            mentee_graduation_month_year=data.get("mentee", {}).get("graduation_month_year") if data.get("mentee") else None,
+            mentee_undergraduate_major=data.get("mentee", {}).get("undergraduate_major") if data.get("mentee") else None,
+            mentee_undergraduate_final_grade=data.get("mentee", {}).get("undergraduate_final_grade") if data.get("mentee") else None,
+            # Test Scores
+            mentee_taken_standardized_tests=data.get("mentee", {}).get("taken_standardized_tests") if data.get("mentee") else None,
+            mentee_standardized_tests_taken=data.get("mentee", {}).get("standardized_tests_taken") if data.get("mentee") else None,
+            mentee_test_scores=data.get("mentee", {}).get("test_scores") if data.get("mentee") else None,
+            mentee_taken_english_tests=data.get("mentee", {}).get("taken_english_tests") if data.get("mentee") else None,
+            mentee_english_tests_taken=data.get("mentee", {}).get("english_tests_taken") if data.get("mentee") else None,
+            # Journey & Planning
+            mentee_current_stage=data.get("mentee", {}).get("current_stage") if data.get("mentee") else None,
+            mentee_research_methods=data.get("mentee", {}).get("research_methods") if data.get("mentee") else None,
+            mentee_finance_education=data.get("mentee", {}).get("finance_education") if data.get("mentee") else None,
+            mentee_planning_settle_abroad=data.get("mentee", {}).get("planning_settle_abroad") if data.get("mentee") else None,
+            # Personal & Interests
+            mentee_hobbies=data.get("mentee", {}).get("hobbies") if data.get("mentee") else None,
+            mentee_extracurricular_activities=data.get("mentee", {}).get("extracurricular_activities") if data.get("mentee") else None,
+            mentee_cocurricular_activities=data.get("mentee", {}).get("cocurricular_activities") if data.get("mentee") else None,
+            mentee_weather_preference=data.get("mentee", {}).get("weather_preference") if data.get("mentee") else None,
+            # Career/Professional
+            mentee_current_designation=data.get("mentee", {}).get("current_designation") if data.get("mentee") else None,
+            mentee_work_experience_range=data.get("mentee", {}).get("work_experience_range") if data.get("mentee") else None,
+            mentee_company_designation_history=data.get("mentee", {}).get("company_designation_history") if data.get("mentee") else None,
+            mentee_lived_away_from_home=data.get("mentee", {}).get("lived_away_from_home") if data.get("mentee") else None,
+            # Discovery
+            mentee_how_found_mentto=data.get("mentee", {}).get("how_found_mentto") if data.get("mentee") else None,
+            mentee_community_referral=data.get("mentee", {}).get("community_referral") if data.get("mentee") else None,
             # Additional mentor details from mentor onboarding
             mentor_first_name=data.get("mentor", {}).get("first_name") if data.get("mentor") else None,
             mentor_last_name=data.get("mentor", {}).get("last_name") if data.get("mentor") else None,

@@ -384,6 +384,44 @@ class MentorshipInterestResponse(BaseModel):
     mentee_year_planning_abroad: Optional[str] = None
     mentee_target_industry: Optional[List[str]] = None
     mentee_self_description: Optional[str] = None
+    mentee_profile_pic_url: Optional[str] = None
+    mentee_how_mentto_help: Optional[List[str]] = None
+    # Academic & Education
+    mentee_universities_exploring: Optional[List[str]] = None
+    mentee_courses_exploring: Optional[List[str]] = None
+    mentee_senior_secondary_school: Optional[str] = None
+    mentee_educational_board: Optional[str] = None
+    mentee_higher_secondary_stream: Optional[str] = None
+    mentee_grade_10_score: Optional[float] = None
+    mentee_grade_12_score: Optional[float] = None
+    mentee_graduation_university: Optional[str] = None
+    mentee_graduation_month_year: Optional[str] = None
+    mentee_undergraduate_major: Optional[str] = None
+    mentee_undergraduate_final_grade: Optional[str] = None
+    # Test Scores
+    mentee_taken_standardized_tests: Optional[bool] = None
+    mentee_standardized_tests_taken: Optional[List[str]] = None
+    mentee_test_scores: Optional[Dict[str, Any]] = None
+    mentee_taken_english_tests: Optional[bool] = None
+    mentee_english_tests_taken: Optional[List[str]] = None
+    # Journey & Planning
+    mentee_current_stage: Optional[List[str]] = None
+    mentee_research_methods: Optional[List[str]] = None
+    mentee_finance_education: Optional[List[str]] = None
+    mentee_planning_settle_abroad: Optional[bool] = None
+    # Personal & Interests
+    mentee_hobbies: Optional[List[str]] = None
+    mentee_extracurricular_activities: Optional[List[str]] = None
+    mentee_cocurricular_activities: Optional[List[str]] = None
+    mentee_weather_preference: Optional[List[str]] = None
+    # Career/Professional
+    mentee_current_designation: Optional[str] = None
+    mentee_work_experience_range: Optional[str] = None
+    mentee_company_designation_history: Optional[str] = None
+    mentee_lived_away_from_home: Optional[bool] = None
+    # Discovery
+    mentee_how_found_mentto: Optional[str] = None
+    mentee_community_referral: Optional[bool] = None
     
     # Additional mentor details from mentor onboarding
     mentor_first_name: Optional[str] = None
